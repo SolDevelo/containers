@@ -11,6 +11,7 @@ echo "/etc/kafka/docker/run invoked"
 
 # Set default environment variables for Testcontainers compatibility
 # These can be overridden by passing environment variables to the container
+export TESTCONTAINERS_KAFKA=true
 export KAFKA_CFG_NODE_ID="${KAFKA_CFG_NODE_ID:-1}"
 export KAFKA_CFG_PROCESS_ROLES="${KAFKA_CFG_PROCESS_ROLES:-broker,controller}"
 export KAFKA_CFG_CONTROLLER_QUORUM_VOTERS="${KAFKA_CFG_CONTROLLER_QUORUM_VOTERS:-1@localhost:9093}"

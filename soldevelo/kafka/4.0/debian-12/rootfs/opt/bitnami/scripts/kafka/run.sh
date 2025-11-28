@@ -52,10 +52,19 @@ monitor_kafka_output() {
     done
 }
 
-# Start Kafka with output monitoring
-if am_i_root; then
-    exec_as_user "$KAFKA_DAEMON_USER" "$cmd" "${args[@]}" "$@" 2>&1 | monitor_kafka_output "$KAFKA_ID"
+if [[ "${TESTCONTAINERS_KAFKA:-false}" == "true" ]]; then
+    # Start Kafka with output monitoring (only for Testcontainers)
+    if am_i_root; then
+        exec_as_user "$KAFKA_DAEMON_USER" "$cmd" "${args[@]}" "$@" 2>&1 | monitor_kafka_output "$KAFKA_ID"
+    else
+        exec "$cmd" "${args[@]}" "$@" 2>&1 | monitor_kafka_output "$KAFKA_ID"
+    fi
 else
-    exec "$cmd" "${args[@]}" "$@" 2>&1 | monitor_kafka_output "$KAFKA_ID"
+    # Standard Bitnami behavior - preserve signal handling
+    if am_i_root; then
+        exec_as_user "$KAFKA_DAEMON_USER" "$cmd" "${args[@]}" "$@"
+    else
+        exec "$cmd" "${args[@]}" "$@"
+    fi
 fi
 
