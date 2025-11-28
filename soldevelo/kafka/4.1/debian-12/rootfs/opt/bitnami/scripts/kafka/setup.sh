@@ -20,7 +20,7 @@ set -o pipefail
 # Map Kafka environment variables
 kafka_create_alias_environment_variables
 
-# Dynamically set node.id/broker.id/controller.quorum.voters if the _COMMAND environment variable is set
+# Dynamically set node.id/broker.id/controller.quorum.bootstrap.servers if the _COMMAND environment variable is set
 kafka_dynamic_environment_variables
 # Set the default truststore locations before validation
 kafka_configure_default_truststore_locations
@@ -53,13 +53,6 @@ if kafka_is_zookeeper_supported; then
 else
     # Initialize KRaft metadata unless initialization is skipped
     ! is_boolean_yes "$KAFKA_SKIP_KRAFT_STORAGE_INIT" && kafka_kraft_storage_initialize
-fi
-# KRaft controllers may get stuck starting when the controller quorum voters are changed.
-# Workaround: Remove quorum-state file when scaling up/down controllers (Waiting proposal KIP-853)
-# https://cwiki.apache.org/confluence/display/KAFKA/KIP-853%3A+KRaft+Voter+Changes
-if [[ -f "${KAFKA_DATA_DIR}/__cluster_metadata-0/quorum-state" ]] && kafka_is_zookeeper_supported && grep -q "^controller.quorum.voters=" "$KAFKA_CONF_FILE" && kafka_kraft_quorum_voters_changed; then
-    warn "Detected inconsistences between controller.quorum.voters and quorum-state, removing it..."
-    rm -f "${KAFKA_DATA_DIR}/__cluster_metadata-0/quorum-state"
 fi
 # Ensure custom initialization scripts are executed
 kafka_custom_init_scripts
