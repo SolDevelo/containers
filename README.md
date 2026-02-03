@@ -56,8 +56,8 @@ We'd love for you to contribute to those container images. You can request new f
 
 ## License
 
-Copyright 2025 SolDevelo
-Based on Bitnami Containers Library (https://github.com/bitnami/containers) © 2025 Broadcom Inc. (licensed under Apache-2.0)
+Copyright 2026 SolDevelo
+Based on Bitnami Containers Library (https://github.com/bitnami/containers) © 2026 Broadcom Inc. (licensed under Apache-2.0)
 
 This project is licensed under the Apache License, Version 2.0.
 

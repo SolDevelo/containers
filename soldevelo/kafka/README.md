@@ -969,8 +969,8 @@ If you encountered a problem running this container, you can file an [issue](htt
 
 ## License
 
-Copyright 2025 SolDevelo  
-Based on Bitnami Containers Library (https://github.com/bitnami/containers) © 2025 Broadcom. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries. (licensed under Apache-2.0)
+Copyright 2026 SolDevelo  
+Based on Bitnami Containers Library (https://github.com/bitnami/containers) © 2026 Broadcom. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries. (licensed under Apache-2.0)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

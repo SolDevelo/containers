@@ -1,5 +1,5 @@
-Copyright 2025 SolDevelo
-Based on Bitnami Containers Library © 2025 Broadcom (licensed under Apache-2.0). The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+Copyright 2026 SolDevelo
+Based on Bitnami Containers Library © 2026 Broadcom (licensed under Apache-2.0). The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 This product includes third-party open source software. Additional copyright and licensing information can be found inside the packages themselves
 
