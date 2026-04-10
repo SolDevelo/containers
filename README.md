@@ -8,14 +8,17 @@ This repository is a **fork of Bitnami's Containers Library**. We maintain **Apa
 
 ## Available Images
 
-- **Apache Kafka** - Distributed streaming platform
-- **PostgreSQL HA** - High availability PostgreSQL with repmgr for replication and failover
+| Image | Docker Hub |
+|-------|------------|
+| **Apache Kafka** — Distributed streaming platform | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/kafka?sort=semver&label=soldevelo%2Fkafka)](https://hub.docker.com/r/soldevelo/kafka/tags) |
+| **PostgreSQL HA** — High availability PostgreSQL with repmgr for replication and failover | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/postgresql-repmgr?sort=semver&label=soldevelo%2Fpostgresql-repmgr)](https://hub.docker.com/r/soldevelo/postgresql-repmgr/tags) |
 
 ## Features
 
 - Maintained container images by SolDevelo
 - Based on Bitnami containers (Apache-2.0 licensed)
 - Ready to use with Docker or Docker Compose
+- Kafka: [Testcontainers](https://testcontainers.com/) support for integration testing
 - Future support for additional containers planned
 
 ## Get an image

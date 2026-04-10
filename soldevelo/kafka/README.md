@@ -37,6 +37,17 @@ cd soldevelo/APP/VERSION/OPERATING-SYSTEM
 docker build -t soldevelo/APP:latest .
 ```
 
+## Testcontainers
+
+This image supports [Testcontainers](https://testcontainers.com/). Use `asCompatibleSubstituteFor("apache/kafka")` to tell the `KafkaContainer` module to accept the `soldevelo/kafka` image as a compatible replacement:
+
+```java
+KafkaContainer kafkaContainer = new KafkaContainer(
+    DockerImageName.parse("soldevelo/kafka:latest")
+                   .asCompatibleSubstituteFor("apache/kafka")
+);
+```
+
 ## Persisting your data
 
 If you remove the container all your data and configurations will be lost, and the next time you run the image the database will be reinitialized. To avoid this loss of data, you should mount a volume that will persist even after the container is removed.
