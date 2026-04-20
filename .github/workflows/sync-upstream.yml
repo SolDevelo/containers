@@ -1,0 +1,137 @@
+name: Sync from Upstream
+
+on:
+  # Schedule disabled - uncomment when ready for automated weekly sync
+  # schedule:
+  #   # Every Monday at 07:00 UTC
+  #   - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          # Use a PAT so the created PR can trigger other workflows
+          token: ${{ secrets.SYNC_PAT || github.token }}
+
+      - name: Configure git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add bitnami remote and fetch
+        run: |
+          git remote add bitnami https://github.com/bitnami/containers.git || true
+          git fetch bitnami main --depth=1 --quiet
+
+      - name: Run sync check
+        id: sync
+        run: |
+          chmod +x scripts/sync-upstream.sh
+
+          # Capture output; exit 0 even if nothing changed
+          OUTPUT=$(bash scripts/sync-upstream.sh 2>&1) || true
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q '\[CHANGED\]'; then
+            echo "has_changes=true"  >> "$GITHUB_OUTPUT"
+            # Collect changed image names for the PR title
+            CHANGED=$(echo "$OUTPUT" | grep '\[CHANGED\]' | awk '{print $1}' | tr '\n' ', ' | sed 's/,$//')
+            echo "changed_images=$CHANGED" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply upstream changes (prebuildfs + rootfs)
+        if: steps.sync.outputs.has_changes == 'true'
+        id: apply
+        run: |
+          bash scripts/sync-upstream.sh apply 2>&1 | tee /tmp/apply-output.txt
+          BRANCH=$(git branch --show-current)
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "apply_output<<EOF" >> "$GITHUB_OUTPUT"
+          cat /tmp/apply-output.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          # Extract files needing manual review from [REVIEW] markers
+          REVIEW_FILES=$(grep '\[REVIEW\]' /tmp/apply-output.txt | sed 's/.*\[REVIEW\] //' | tr '\n' '|' | sed 's/|$//')
+          echo "review_files=$REVIEW_FILES" >> "$GITHUB_OUTPUT"
+
+      - name: Push sync branch
+        if: steps.sync.outputs.has_changes == 'true'
+        run: |
+          git push origin "${{ steps.apply.outputs.branch }}" --force-with-lease
+
+      - name: Create Pull Request
+        if: steps.sync.outputs.has_changes == 'true'
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.SYNC_PAT || github.token }}
+          script: |
+            const branch = '${{ steps.apply.outputs.branch }}';
+            const changed = '${{ steps.sync.outputs.changed_images }}';
+            const applyOutput = `${{ steps.apply.outputs.apply_output }}`;
+            const reviewFilesRaw = '${{ steps.apply.outputs.review_files }}';
+            const reviewFiles = reviewFilesRaw ? reviewFilesRaw.split('|') : [];
+
+            const reviewSection = reviewFiles.length > 0
+              ? [
+                  '### :warning: Files needing manual review',
+                  '',
+                  'These files had merge conflicts - our version was kept. Check if upstream',
+                  'changes should be incorporated before merging this PR:',
+                  '',
+                  ...reviewFiles.map(f => {
+                    const upstream = f.replace('soldevelo/', 'bitnami/');
+                    return `- \`${f}\`  _(upstream: \`${upstream}\`)_`;
+                  }),
+                  '',
+                ]
+              : [];
+
+            const body = [
+              '## Upstream Bitnami Sync',
+              '',
+              `**Changed images:** ${changed}`,
+              '',
+              ...reviewSection,
+              '### What was applied automatically',
+              '- `Dockerfile` - upstream content merged; our copyright header and',
+              '  `description`/`documentation`/`source`/`vendor` labels preserved',
+              '- `prebuildfs/` and `rootfs/` - file-by-file:',
+              '  - New upstream files added',
+              '  - Header-only diffs (copyright/branding) - header preserved, upstream body applied',
+              '  - Files with our functional modifications kept at our version (see warning above)',
+              '- `tags-info.yaml` - patch version updated, `revision` reset to `0`',
+              '',
+              '### Before merging',
+              'Resolve any files listed above before merging.',
+              'Merging this PR will automatically trigger the build-and-publish workflow.',
+              '',
+              '<details><summary>Full sync output</summary>',
+              '',
+              '```',
+              applyOutput,
+              '```',
+              '</details>',
+            ].join('\n');
+
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `chore: sync upstream bitnami changes (${changed})`,
+              head: branch,
+              base: 'main',
+              body,
+            });
+
+      - name: No changes found
+        if: steps.sync.outputs.has_changes == 'false'
+        run: echo "All images are up to date with upstream bitnami. No PR created."
