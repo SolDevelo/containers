@@ -1,0 +1,187 @@
+name: Build and Publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'soldevelo/**/debian-12/**'
+  workflow_dispatch:
+    inputs:
+      image_path:
+        description: >
+          Specific image path to build, e.g. soldevelo/kafka/4.2/debian-12.
+          Leave empty to build all images that have a tags-info.yaml.
+        required: false
+        default: ''
+      tag_suffix:
+        description: >
+          Optional suffix appended to all tags, e.g. -test.
+          Leave empty for production tags.
+          Test tags can be deleted from Docker Hub afterwards.
+        required: false
+        default: ''
+      confirm_push:
+        description: >-
+          Set to 'yes' to actually push images to Docker Hub after a successful build.
+          Leave empty to build only (no push).
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -- Detect which image directories need building --
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - id: detect
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.image_path }}" ]]; then
+            # Manual dispatch with specific path
+            images=$(echo '${{ inputs.image_path }}' | jq -Rc '[.]')
+          elif [[ "${{ inputs.image_path }}" == '' && "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+            # Manual dispatch, no path - build everything
+            images=$(find soldevelo -name 'tags-info.yaml' \
+              | xargs -I{} dirname {} \
+              | sort -u \
+              | jq -Rc '.' | jq -sc '.')
+          else
+            # Push: find changed debian-12 directories
+            images=$(git diff --name-only HEAD^ HEAD \
+              | grep -oE 'soldevelo/[^/]+/[^/]+/debian-[0-9]+' \
+              | sort -u \
+              | jq -Rc '.' | jq -sc '.')
+          fi
+
+          if [[ -z "$images" || "$images" == '[]' ]]; then
+            echo "No images to build."
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+          else
+            matrix=$(echo "$images" | jq -c '{include: map({image: .})}')
+            echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+            echo "Images to build: $images"
+          fi
+
+  # -- Build each image (without push, no approval needed) --
+  build:
+    needs: detect
+    if: needs.detect.outputs.matrix != '{"include":[]}'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate and read tags-info.yaml
+        id: info
+        shell: bash
+        run: |
+          TAGS_FILE="${{ matrix.image }}/tags-info.yaml"
+          if [[ ! -f "$TAGS_FILE" ]]; then
+            echo "::error::Missing $TAGS_FILE - cannot determine tags for ${{ matrix.image }}"
+            exit 1
+          fi
+
+          IMAGE_NAME=$(echo "${{ matrix.image }}" | cut -d/ -f2)
+          REVISION=$(yq '.revision // 0' "$TAGS_FILE")
+
+          SUFFIX="${{ inputs.tag_suffix }}"
+          TAGS=""
+          while IFS= read -r tag; do
+            TAGS="${TAGS}soldevelo/${IMAGE_NAME}:${tag}${SUFFIX},"
+            if [[ "$tag" =~ ^[0-9]+(\.[0-9]+)*-debian-[0-9]+$ ]]; then
+              TAGS="${TAGS}soldevelo/${IMAGE_NAME}:${tag}-r${REVISION}${SUFFIX},"
+            fi
+          done < <(yq '.rolling-tags[]' "$TAGS_FILE")
+
+          TAGS="${TAGS%,}"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "revision=$REVISION" >> "$GITHUB_OUTPUT"
+          echo "Tags: $TAGS"
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build (without push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.image }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: ${{ steps.info.outputs.tags }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  # -- Push each image to Docker Hub (only when confirm_push == 'yes') --
+  push:
+    needs: [detect, build]
+    if: needs.detect.outputs.matrix != '{"include":[]}' && inputs.confirm_push == 'yes'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Read tags-info.yaml
+        id: info
+        shell: bash
+        run: |
+          TAGS_FILE="${{ matrix.image }}/tags-info.yaml"
+          # Image name is the second path component: soldevelo/<name>/...
+          IMAGE_NAME=$(echo "${{ matrix.image }}" | cut -d/ -f2)
+          REVISION=$(yq '.revision // 0' "$TAGS_FILE")
+
+          # Build the comma-separated tag list expected by build-push-action
+          SUFFIX="${{ inputs.tag_suffix }}"
+          TAGS=""
+          while IFS= read -r tag; do
+            TAGS="${TAGS}soldevelo/${IMAGE_NAME}:${tag}${SUFFIX},"
+            # Append -r<revision> variant for the X.Y-debian-N rolling tag
+            if [[ "$tag" =~ ^[0-9]+(\.[0-9]+)*-debian-[0-9]+$ ]]; then
+              TAGS="${TAGS}soldevelo/${IMAGE_NAME}:${tag}-r${REVISION}${SUFFIX},"
+            fi
+          done < <(yq '.rolling-tags[]' "$TAGS_FILE")
+
+          TAGS="${TAGS%,}"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.image }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.info.outputs.tags }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
