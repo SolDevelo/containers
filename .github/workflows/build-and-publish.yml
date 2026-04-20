@@ -26,6 +26,13 @@ on:
           Leave empty to build only (no push).
         required: false
         default: ''
+      flatten:
+        description: >-
+          Which images to flatten after push. Default 'kafka' flattens only the kafka image.
+          Use 'all' to flatten every image, a single name (e.g. 'schema-registry'),
+          or a comma-separated list (e.g. 'kafka,schema-registry'). Use 'false' to skip entirely.
+        required: false
+        default: 'kafka'
 
 permissions:
   contents: read
@@ -179,6 +186,7 @@ jobs:
 
           TAGS="${TAGS%,}"
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@v3
 
@@ -200,3 +208,48 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Flatten image layers
+        if: inputs.flatten != 'false'
+        shell: bash
+        run: |
+          FLATTEN="${{ inputs.flatten }}"
+          IMAGE_NAME="${{ steps.info.outputs.image_name }}"
+
+          # Decide whether this image should be flattened
+          should_flatten=false
+          if [[ "$FLATTEN" == "all" ]]; then
+            should_flatten=true
+          else
+            # Support comma-separated list of image names
+            IFS=',' read -ra flatten_list <<< "$FLATTEN"
+            for name in "${flatten_list[@]}"; do
+              name="${name// /}"  # trim spaces
+              if [[ "$name" == "$IMAGE_NAME" ]]; then
+                should_flatten=true
+                break
+              fi
+            done
+          fi
+
+          if [[ "$should_flatten" != "true" ]]; then
+            echo "Skipping flatten for $IMAGE_NAME (not in flatten list: $FLATTEN)"
+            exit 0
+          fi
+
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" \
+            | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin 2>/dev/null || true
+          # Install crane
+          CRANE_VERSION=$(curl -sSfL https://api.github.com/repos/google/go-containerregistry/releases/latest \
+            | grep '"tag_name"' | grep -oE 'v[0-9.]+')
+          curl -sSfL "https://github.com/google/go-containerregistry/releases/download/${CRANE_VERSION}/go-containerregistry_Linux_x86_64.tar.gz" \
+            | tar -xz crane
+          sudo mv crane /usr/local/bin/crane
+          # Flatten each tag
+          while IFS=, read -ra tags_arr; do
+            for tag in "${tags_arr[@]}"; do
+              [[ -z "$tag" ]] && continue
+              echo "Flattening $tag ..."
+              crane flatten "$tag" --tag "$tag"
+            done
+          done <<< "${{ steps.info.outputs.tags }}"
