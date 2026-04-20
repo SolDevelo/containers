@@ -9,7 +9,7 @@ ARG JAVA_EXTRA_SECURITY_DIR="/bitnami/java/extra-security"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-02-18T12:51:18Z" \
+      org.opencontainers.image.created="2026-04-08T19:29:36Z" \
       org.opencontainers.image.description="Apache Kafka container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/kafka/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/kafka" \
@@ -50,12 +50,11 @@ RUN ln -s /opt/bitnami/scripts/kafka/entrypoint.sh /entrypoint.sh
 RUN ln -s /opt/bitnami/scripts/kafka/run.sh /run.sh
 
 COPY rootfs /
-RUN chmod +x /etc/kafka/docker/run
 RUN /opt/bitnami/scripts/java/postunpack.sh
 RUN /opt/bitnami/scripts/kafka/postunpack.sh
 ENV APP_VERSION="4.2.0" \
     BITNAMI_APP_NAME="kafka" \
-    IMAGE_REVISION="0" \
+    IMAGE_REVISION="2" \
     JAVA_HOME="/opt/bitnami/java" \
     PATH="/opt/bitnami/java/bin:/opt/bitnami/kafka/bin:$PATH"
 
