@@ -59,16 +59,16 @@ jobs:
             # Manual dispatch with specific path
             images=$(echo '${{ inputs.image_path }}' | jq -Rc '[.]')
           elif [[ "${{ inputs.image_path }}" == '' && "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
-            # Manual dispatch, no path - build everything
+            # Manual dispatch, no path - build everything, oldest version first
             images=$(find soldevelo -name 'tags-info.yaml' \
               | xargs -I{} dirname {} \
-              | sort -u \
+              | sort -V \
               | jq -Rc '.' | jq -sc '.')
           else
-            # Push: find changed debian-12 directories
+            # Push: find changed debian-12 directories, oldest version first
             images=$(git diff --name-only HEAD^ HEAD \
               | grep -oE 'soldevelo/[^/]+/[^/]+/debian-[0-9]+' \
-              | sort -u \
+              | sort -V \
               | jq -Rc '.' | jq -sc '.')
           fi
 
@@ -153,6 +153,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
       fail-fast: false
+      max-parallel: 2
 
     steps:
       - uses: actions/checkout@v6
@@ -204,6 +205,7 @@ jobs:
           context: ${{ matrix.image }}
           platforms: linux/amd64,linux/arm64
           push: true
+          provenance: false
           tags: ${{ steps.info.outputs.tags }}
           cache-from: type=gha,scope=${{ matrix.image }}
           labels: |
