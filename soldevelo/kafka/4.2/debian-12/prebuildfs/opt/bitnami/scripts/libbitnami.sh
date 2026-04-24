@@ -47,7 +47,6 @@ print_image_welcome_page() {
 
     info ""
     info "${BOLD}Welcome to the SolDevelo ${BITNAMI_APP_NAME} container${RESET}"
-    info "Subscribe to project updates by watching ${BOLD}${github_url}${RESET}"
     info ""
 }
 
