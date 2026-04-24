@@ -4,7 +4,6 @@
 #
 # Library for logging functions
 
-# Constants
 RESET='\033[0m'
 RED='\033[38;5;1m'
 GREEN='\033[38;5;2m'

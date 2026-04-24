@@ -4,9 +4,6 @@
 #
 # Library for network functions
 
-# shellcheck disable=SC1091
-
-# Load Generic Libraries
 . /opt/bitnami/scripts/liblog.sh
 . /opt/bitnami/scripts/libvalidations.sh
 

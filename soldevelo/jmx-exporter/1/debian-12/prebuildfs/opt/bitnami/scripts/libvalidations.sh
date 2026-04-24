@@ -4,9 +4,6 @@
 #
 # Validation functions library
 
-# shellcheck disable=SC1091,SC2086
-
-# Load Generic Libraries
 . /opt/bitnami/scripts/liblog.sh
 
 # Functions
