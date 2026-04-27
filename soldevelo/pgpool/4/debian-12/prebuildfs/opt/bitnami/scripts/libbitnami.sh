@@ -1,6 +1,7 @@
 #!/bin/bash
-# Copyright Broadcom, Inc. All Rights Reserved.
-# SPDX-License-Identifier: APACHE-2.0
+# Copyright 2026 SolDevelo
+# Based on Bitnami container scripts © Broadcom, Inc. (Apache-2.0)
+# SPDX-License-Identifier: Apache-2.0
 #
 # Bitnami custom library
 
@@ -42,12 +43,10 @@ print_welcome_page() {
 #   None
 #########################
 print_image_welcome_page() {
-    local github_url="https://github.com/bitnami/containers"
+    local github_url="https://github.com/soldevelo/containers"
 
     info ""
-    info "${BOLD}Welcome to the Bitnami ${BITNAMI_APP_NAME} container${RESET}"
-    info "Subscribe to project updates by watching ${BOLD}${github_url}${RESET}"
-    info "${YELLOW}NOTICE: Starting August 28th, 2025, only a limited subset of images/charts will remain available for free. Backup will be available for some time at the 'Bitnami Legacy' repository. More info at https://github.com/bitnami/containers/issues/83267${RESET}"
+    info "${BOLD}Welcome to the SolDevelo ${BITNAMI_APP_NAME} container${RESET}"
     info ""
 }
 
