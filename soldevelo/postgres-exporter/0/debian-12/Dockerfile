@@ -13,7 +13,6 @@ LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/postgres-exporter/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/postgres-exporter" \
       org.opencontainers.image.title="postgres-exporter" \
-      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/postgres-exporter" \
       org.opencontainers.image.vendor="SolDevelo" \
       org.opencontainers.image.version="0.19.1"
 
