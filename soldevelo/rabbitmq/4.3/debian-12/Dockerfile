@@ -13,7 +13,6 @@ LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/rabbitmq/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/rabbitmq" \
       org.opencontainers.image.title="rabbitmq" \
-      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/rabbitmq" \
       org.opencontainers.image.vendor="SolDevelo" \
       org.opencontainers.image.version="4.3.0"
 
