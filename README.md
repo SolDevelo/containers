@@ -4,7 +4,7 @@
 
 # SolDevelo Container Images
 
-This repository is a **fork of Bitnami's Containers Library**. We maintain **Apache Kafka** and **PostgreSQL HA (with repmgr)** container images, with plans to add more containers in the future. These images are maintained by SolDevelo to provide up-to-date versions and fixes, while keeping the original Bitnami base.
+This repository is a **fork of Bitnami's Containers Library**. We maintain **Apache Kafka**, **PostgreSQL HA (with repmgr)**, **Pgpool-II**, and **PostgreSQL Exporter** container images, with plans to add more containers in the future. These images are maintained by SolDevelo to provide up-to-date versions and fixes, while keeping the original Bitnami base.
 
 ## Available Images
 
@@ -12,6 +12,8 @@ This repository is a **fork of Bitnami's Containers Library**. We maintain **Apa
 |-------|------------|
 | **Apache Kafka** — Distributed streaming platform | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/kafka?sort=semver&label=soldevelo%2Fkafka)](https://hub.docker.com/r/soldevelo/kafka/tags) |
 | **PostgreSQL HA** — High availability PostgreSQL with repmgr for replication and failover | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/postgresql-repmgr?sort=semver&label=soldevelo%2Fpostgresql-repmgr)](https://hub.docker.com/r/soldevelo/postgresql-repmgr/tags) |
+| **Pgpool-II** — Connection pooling and load balancing for PostgreSQL | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/pgpool?sort=semver&label=soldevelo%2Fpgpool)](https://hub.docker.com/r/soldevelo/pgpool/tags) |
+| **PostgreSQL Exporter** — Prometheus metrics exporter for PostgreSQL | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/postgres-exporter?sort=semver&label=soldevelo%2Fpostgres-exporter)](https://hub.docker.com/r/soldevelo/postgres-exporter/tags) |
 
 ## Features
 

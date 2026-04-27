@@ -1,5 +1,5 @@
 # Copyright 2026 SolDevelo
-# Based on Bitnami Pgpool © Broadcom, Inc. (Apache-2.0)
+# Based on Bitnami Pgpool-II © Broadcom, Inc. (Apache-2.0)
 # SPDX-License-Identifier: Apache-2.0
 
 services:

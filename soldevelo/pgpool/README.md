@@ -87,12 +87,19 @@ PGPASSWORD=$PGPOOL_POSTGRES_PASSWORD psql -U $PGPOOL_POSTGRES_USERNAME -h localh
 pcp_attach_node -h localhost -U $PGPOOL_ADMIN_USERNAME 0
 ```
 
+### Configuration file
+
+You can override the default configuration by mounting a custom file and setting `PGPOOL_USER_CONF_FILE` to its path — the file will be appended to the default `pgpool.conf`. Similarly, set `PGPOOL_USER_HBA_FILE` to override the default host-based authentication configuration.
+
+Refer to the [Pgpool-II server configuration reference](http://www.pgpool.net/docs/latest/en/html/runtime-config.html) for the full list of available options.
+
 ## Environment variables
 
 ### Customizable environment variables
 
 | Name | Description | Default |
 |---|---|---|
+| `PGPOOL_WORK_DIR` | Pgpool-II working directory | `/tmp` |
 | `PGPOOL_BACKEND_NODES` | Comma/semi-colon/space separated list of backend nodes (`id:host:port`) | Required |
 | `PGPOOL_SR_CHECK_USER` | Streaming replication check username | — |
 | `PGPOOL_SR_CHECK_PASSWORD` | Streaming replication check password | — |
@@ -109,6 +116,7 @@ pcp_attach_node -h localhost -U $PGPOOL_ADMIN_USERNAME 0
 | `PGPOOL_DISABLE_LOAD_BALANCE_ON_WRITE` | Disable load balancing on write queries | `transaction` |
 | `PGPOOL_ENABLE_POOL_HBA` | Enable host-based authentication | `yes` |
 | `PGPOOL_ENABLE_POOL_PASSWD` | Enable pool password file | `yes` |
+| `PGPOOL_PASSWD_FILE` | Pool password file name | `pool_passwd` |
 | `PGPOOL_ENABLE_CONNECTION_CACHE` | Enable connection cache | `yes` |
 | `PGPOOL_AUTHENTICATION_METHOD` | Authentication method | `scram-sha-256` |
 | `PGPOOL_PORT_NUMBER` | Pgpool-II port | `5432` |
@@ -119,6 +127,7 @@ pcp_attach_node -h localhost -U $PGPOOL_ADMIN_USERNAME 0
 | `PGPOOL_HEALTH_CHECK_TIMEOUT` | Health check timeout (seconds) | `10` |
 | `PGPOOL_HEALTH_CHECK_MAX_RETRIES` | Health check max retries | `5` |
 | `PGPOOL_HEALTH_CHECK_RETRY_DELAY` | Health check retry delay (seconds) | `5` |
+| `PGPOOL_HEALTH_CHECK_PSQL_TIMEOUT` | Health check psql timeout (seconds) | `15` |
 | `PGPOOL_HEALTH_CHECK_USER` | Health check username | `$PGPOOL_SR_CHECK_USER` |
 | `PGPOOL_HEALTH_CHECK_PASSWORD` | Health check password | `$PGPOOL_SR_CHECK_PASSWORD` |
 | `PGPOOL_ENABLE_LDAP` | Enable LDAP authentication | `no` |
@@ -135,6 +144,29 @@ pcp_attach_node -h localhost -U $PGPOOL_ADMIN_USERNAME 0
 | `PGPOOL_FAILOVER_ON_BACKEND_ERROR` | Failover on backend error | `off` |
 | `PGPOOL_BACKEND_APPLICATION_NAMES` | Backend application names | — |
 | `PGPOOL_AES_KEY` | AES key | random |
+| `PGPOOL_DAEMON_USER` | Pgpool-II daemon user | `pgpool` |
+| `PGPOOL_DAEMON_GROUP` | Pgpool-II daemon group | `pgpool` |
+
+### Read-only environment variables
+
+| Name | Description | Value |
+|---|---|---|
+| `PGPOOL_BASE_DIR` | Pgpool-II installation directory | `${BITNAMI_ROOT_DIR}/pgpool` |
+| `PGPOOL_BIN_DIR` | Pgpool-II binaries directory | `${PGPOOL_BASE_DIR}/bin` |
+| `PGPOOL_DATA_DIR` | Pgpool-II data directory | `${PGPOOL_BASE_DIR}/data` |
+| `PGPOOL_DEFAULT_CONF_DIR` | Default configuration directory | `${PGPOOL_BASE_DIR}/conf.default` |
+| `PGPOOL_CONF_DIR` | Configuration directory | `${PGPOOL_BASE_DIR}/conf` |
+| `PGPOOL_DEFAULT_ETC_DIR` | Default etc directory | `${PGPOOL_BASE_DIR}/etc.default` |
+| `PGPOOL_ETC_DIR` | Etc directory | `${PGPOOL_BASE_DIR}/etc` |
+| `PGPOOL_LOG_DIR` | Logs directory | `${PGPOOL_BASE_DIR}/logs` |
+| `PGPOOL_TMP_DIR` | Temporary directory | `${PGPOOL_BASE_DIR}/tmp` |
+| `PGPOOL_INITSCRIPTS_DIR` | Init scripts directory | `/docker-entrypoint-initdb.d` |
+| `PGPOOL_CONF_FILE` | Configuration file | `${PGPOOL_CONF_DIR}/pgpool.conf` |
+| `PGPOOL_PCP_CONF_FILE` | PCP configuration file | `${PGPOOL_ETC_DIR}/pcp.conf` |
+| `PGPOOL_PGHBA_FILE` | Host-based authentication file | `${PGPOOL_CONF_DIR}/pool_hba.conf` |
+| `PGPOOL_LOG_FILE` | Log file | `${PGPOOL_LOG_DIR}/pgpool.log` |
+| `PGPOOL_PID_FILE` | PID file | `${PGPOOL_TMP_DIR}/pgpool.pid` |
+| `PGPOOLKEYFILE` | Pool key file | `${PGPOOL_CONF_DIR}/.pgpoolkey` |
 
 ## Logging
 
