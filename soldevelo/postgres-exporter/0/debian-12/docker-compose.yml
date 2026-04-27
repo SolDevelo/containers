@@ -1,0 +1,40 @@
+# Copyright 2026 SolDevelo
+# Based on Bitnami Postgres Exporter © Broadcom, Inc. (Apache-2.0)
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  postgresql:
+    image: docker.io/soldevelo/postgresql-repmgr:17
+    environment:
+      - POSTGRESQL_POSTGRES_PASSWORD=adminpassword
+      - POSTGRESQL_USERNAME=customuser
+      - POSTGRESQL_PASSWORD=custompassword
+      - POSTGRESQL_DATABASE=customdatabase
+      - REPMGR_PASSWORD=repmgrpassword
+      - REPMGR_PRIMARY_HOST=postgresql
+      - REPMGR_PRIMARY_PORT=5432
+      - REPMGR_PARTNER_NODES=postgresql:5432
+      - REPMGR_NODE_NAME=postgresql-0
+      - REPMGR_NODE_NETWORK_NAME=postgresql
+      - REPMGR_PORT_NUMBER=5432
+    volumes:
+      - pg_data:/bitnami/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U customuser -d customdatabase"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  postgres-exporter:
+    image: docker.io/soldevelo/postgres-exporter:0
+    ports:
+      - 9187:9187
+    environment:
+      - DATA_SOURCE_NAME=postgresql://customuser:custompassword@postgresql:5432/customdatabase?sslmode=disable
+    depends_on:
+      postgresql:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+    driver: local
