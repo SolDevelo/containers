@@ -68,7 +68,7 @@ jobs:
             # Push: find changed debian-12 directories, oldest version first
             images=$(git diff --name-only HEAD^ HEAD \
               | grep -oE 'soldevelo/[^/]+/[^/]+/debian-[0-9]+' \
-              | sort -V \
+              | sort -Vu \
               | jq -Rc '.' | jq -sc '.')
           fi
 
