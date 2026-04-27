@@ -1,0 +1,22 @@
+# Copyright 2026 SolDevelo
+# Based on Bitnami RabbitMQ © Broadcom, Inc. (Apache-2.0)
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  rabbitmq:
+    image: docker.io/soldevelo/rabbitmq:4.3
+    ports:
+      - '4369:4369'
+      - '5551:5551'
+      - '5552:5552'
+      - '5672:5672'
+      - '25672:25672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_SECURE_PASSWORD=yes
+      - RABBITMQ_LOGS=-
+    volumes:
+      - 'rabbitmq_data:/bitnami/rabbitmq/mnesia'
+volumes:
+  rabbitmq_data:
+    driver: local
