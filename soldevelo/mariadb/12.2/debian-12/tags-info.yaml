@@ -1,0 +1,6 @@
+revision: 0
+rolling-tags:
+  - "12.2"
+  - 12.2.2-debian-12
+  - 12.2.2
+  - latest

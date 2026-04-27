@@ -4,7 +4,7 @@
 
 # SolDevelo Container Images
 
-This repository is a **fork of Bitnami's Containers Library**. We maintain **Apache Kafka**, **PostgreSQL HA (with repmgr)**, **Pgpool-II**, and **PostgreSQL Exporter** container images, with plans to add more containers in the future. These images are maintained by SolDevelo to provide up-to-date versions and fixes, while keeping the original Bitnami base.
+This repository is a **fork of Bitnami's Containers Library**. We maintain the container images listed below, with plans to add more in the future. All images are maintained by SolDevelo to provide up-to-date versions and fixes while keeping the original Bitnami base.
 
 ## Available Images
 
@@ -12,8 +12,16 @@ This repository is a **fork of Bitnami's Containers Library**. We maintain **Apa
 |-------|------------|
 | **Apache Kafka** — Distributed streaming platform | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/kafka?sort=semver&label=soldevelo%2Fkafka)](https://hub.docker.com/r/soldevelo/kafka/tags) |
 | **PostgreSQL HA** — High availability PostgreSQL with repmgr for replication and failover | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/postgresql-repmgr?sort=semver&label=soldevelo%2Fpostgresql-repmgr)](https://hub.docker.com/r/soldevelo/postgresql-repmgr/tags) |
+| **PostgreSQL** — Powerful open-source object-relational database | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/postgresql?sort=semver&label=soldevelo%2Fpostgresql)](https://hub.docker.com/r/soldevelo/postgresql/tags) |
 | **Pgpool-II** — Connection pooling and load balancing for PostgreSQL | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/pgpool?sort=semver&label=soldevelo%2Fpgpool)](https://hub.docker.com/r/soldevelo/pgpool/tags) |
 | **PostgreSQL Exporter** — Prometheus metrics exporter for PostgreSQL | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/postgres-exporter?sort=semver&label=soldevelo%2Fpostgres-exporter)](https://hub.docker.com/r/soldevelo/postgres-exporter/tags) |
+| **MariaDB** — Fast, scalable and reliable SQL database | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/mariadb?sort=semver&label=soldevelo%2Fmariadb)](https://hub.docker.com/r/soldevelo/mariadb/tags) |
+| **MongoDB** — General-purpose document-based distributed database | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/mongodb?sort=semver&label=soldevelo%2Fmongodb)](https://hub.docker.com/r/soldevelo/mongodb/tags) |
+| **Redis** — In-memory data structure store for cache and messaging | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/redis?sort=semver&label=soldevelo%2Fredis)](https://hub.docker.com/r/soldevelo/redis/tags) |
+| **Schema Registry** — Schema management for Kafka (Confluent-compatible) | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/schema-registry?sort=semver&label=soldevelo%2Fschema-registry)](https://hub.docker.com/r/soldevelo/schema-registry/tags) |
+| **kubectl** — Kubernetes command-line tool | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/kubectl?sort=semver&label=soldevelo%2Fkubectl)](https://hub.docker.com/r/soldevelo/kubectl/tags) |
+| **JMX Exporter** — Prometheus JMX metrics exporter for Java applications | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/jmx-exporter?sort=semver&label=soldevelo%2Fjmx-exporter)](https://hub.docker.com/r/soldevelo/jmx-exporter/tags) |
+| **OS Shell** — Minimal OS shell image for debugging and scripting | [![Docker Hub](https://img.shields.io/docker/v/soldevelo/os-shell?sort=semver&label=soldevelo%2Fos-shell)](https://hub.docker.com/r/soldevelo/os-shell/tags) |
 
 ## Features
 

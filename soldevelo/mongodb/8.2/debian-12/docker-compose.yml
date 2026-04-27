@@ -1,0 +1,15 @@
+# Copyright 2026 SolDevelo
+# Based on Bitnami MongoDB © Broadcom, Inc. (Apache-2.0)
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  mongodb:
+    image: docker.io/soldevelo/mongodb:8.2
+    ports:
+      - "27017:27017"
+    volumes:
+      - 'mongodb_data:/bitnami/mongodb'
+
+volumes:
+  mongodb_data:
+    driver: local
