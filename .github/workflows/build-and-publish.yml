@@ -155,10 +155,13 @@ jobs:
           done < <(yq '.rolling-tags[]' "$TAGS_FILE")
 
           TAGS="${TAGS%,}"
+          PLATFORMS=$(yq '.platforms // "linux/amd64,linux/arm64"' "$TAGS_FILE")
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
           echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
           echo "revision=$REVISION" >> "$GITHUB_OUTPUT"
+          echo "platforms=$PLATFORMS" >> "$GITHUB_OUTPUT"
           echo "Tags: $TAGS"
+          echo "Platforms: $PLATFORMS"
 
       - uses: docker/setup-qemu-action@v4
 
@@ -168,7 +171,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.image }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.info.outputs.platforms }}
           push: false
           tags: ${{ steps.info.outputs.tags }}
           cache-from: type=gha,scope=${{ matrix.image }}
@@ -221,8 +224,10 @@ jobs:
           done < <(yq '.rolling-tags[]' "$TAGS_FILE")
 
           TAGS="${TAGS%,}"
+          PLATFORMS=$(yq '.platforms // "linux/amd64,linux/arm64"' "$TAGS_FILE")
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
           echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "platforms=$PLATFORMS" >> "$GITHUB_OUTPUT"
           # GHCR requires lowercase owner
           echo "ghcr_owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
@@ -245,7 +250,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.image }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.info.outputs.platforms }}
           push: true
           provenance: false
           tags: ghcr.io/${{ steps.info.outputs.ghcr_owner }}/${{ steps.info.outputs.image_name }}:build-${{ github.run_id }}

@@ -1,4 +1,5 @@
 revision: 0
+platforms: linux/amd64
 rolling-tags:
   - "8.2"
   - 8.2.7-debian-12
