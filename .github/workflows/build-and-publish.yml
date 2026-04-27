@@ -7,12 +7,15 @@ on:
       - 'soldevelo/**/debian-12/**'
   workflow_dispatch:
     inputs:
-      image_path:
+      image_paths:
         description: >
-          Specific image path to build, e.g. soldevelo/kafka/4.2/debian-12.
-          Leave empty to build all images that have a tags-info.yaml.
-        required: false
-        default: ''
+          Comma-separated list of images to build. Supports wildcards. Examples:
+            '*'                           -> all images
+            'pgpool'                      -> all versions of pgpool
+            'kafka/*'                     -> all versions of kafka
+            'kafka/4.2'                   -> soldevelo/kafka/4.2/debian-12
+            'soldevelo/kafka/4.2/debian-12' -> exact path (as-is)
+        required: true
       tag_suffix:
         description: >
           Optional suffix appended to all tags, e.g. -test.
@@ -55,15 +58,43 @@ jobs:
       - id: detect
         shell: bash
         run: |
-          if [[ -n "${{ inputs.image_path }}" ]]; then
-            # Manual dispatch with specific path
-            images=$(echo '${{ inputs.image_path }}' | jq -Rc '[.]')
-          elif [[ "${{ inputs.image_path }}" == '' && "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
-            # Manual dispatch, no path - build everything, oldest version first
-            images=$(find soldevelo -name 'tags-info.yaml' \
-              | xargs -I{} dirname {} \
-              | sort -V \
-              | jq -Rc '.' | jq -sc '.')
+          if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+            # Manual dispatch: expand each comma-separated entry.
+            # Supported formats:
+            #   '*'                -> all images
+            #   'pgpool'           -> all versions of pgpool  (soldevelo/pgpool/*/debian-12)
+            #   'kafka/*'          -> all versions of kafka
+            #   'kafka/4.2'        -> soldevelo/kafka/4.2/debian-12
+            #   'soldevelo/...'    -> full path, used as-is
+            expanded=()
+            IFS=',' read -ra entries <<< "${{ inputs.image_paths }}"
+            for entry in "${entries[@]}"; do
+              entry="${entry// /}"  # strip spaces
+              if [[ "$entry" == '*' ]]; then
+                # All images
+                while IFS= read -r dir; do
+                  expanded+=("$dir")
+                done < <(find soldevelo -name 'tags-info.yaml' -exec dirname {} \; 2>/dev/null | sort -V)
+              elif [[ "$entry" == soldevelo/* ]]; then
+                # Full path provided, use as-is
+                expanded+=("$entry")
+              elif [[ "$entry" == *'/*' ]]; then
+                # name/* wildcard: all versions of an image
+                name="${entry%/*}"
+                while IFS= read -r dir; do
+                  expanded+=("$dir")
+                done < <(find "soldevelo/$name" -name 'tags-info.yaml' -exec dirname {} \; 2>/dev/null | sort -V)
+              elif [[ "$entry" != */* ]]; then
+                # Bare name: expand all versions
+                while IFS= read -r dir; do
+                  expanded+=("$dir")
+                done < <(find "soldevelo/$entry" -name 'tags-info.yaml' -exec dirname {} \; 2>/dev/null | sort -V)
+              else
+                # name/version shorthand
+                expanded+=("soldevelo/$entry/debian-12")
+              fi
+            done
+            images=$(printf '%s\n' "${expanded[@]}" | sort -Vu | jq -Rc '.' | jq -sc '.')
           else
             # Push: find changed debian-12 directories, oldest version first
             images=$(git diff --name-only HEAD^ HEAD \

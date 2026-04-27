@@ -260,6 +260,26 @@ with open(tags_path, "w") as f:
 '
 
 # ---------------------------------------------------------------------------
+# Python script: bump the revision counter in tags-info.yaml by 1.
+# Used when upstream content changes but the version number stays the same.
+# ---------------------------------------------------------------------------
+BUMP_REVISION_PY='
+import sys, re
+
+tags_path = sys.argv[1]
+
+with open(tags_path) as f:
+    content = f.read()
+
+def bump(m):
+    return "revision: " + str(int(m.group(1)) + 1)
+content = re.sub(r"^revision:\s*(\d+)", bump, content, flags=re.MULTILINE)
+
+with open(tags_path, "w") as f:
+    f.write(content)
+'
+
+# ---------------------------------------------------------------------------
 # Auto-discover: find all soldevelo/<image>/<version>/<os> dirs with Dockerfiles.
 # The upstream path is obtained by replacing the 'soldevelo/' prefix with 'bitnami/'.
 # ---------------------------------------------------------------------------
@@ -600,8 +620,14 @@ for local_dir in "${CHANGED[@]}"; do
   if [[ -f "$TAGS_FILE" ]]; then
     NEW_VER=$(grep -m1 'org.opencontainers.image.version' "${local_dir}/Dockerfile" \
       | grep -oE '[0-9]+(\.[0-9]+)*' | head -1)
-    echo "   Updating tags-info.yaml -> version ${NEW_VER}, revision 0"
-    python3 -c "$UPDATE_TAGS_PY" "$TAGS_FILE" "$NEW_VER"
+    OLD_VER=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "$TAGS_FILE" | head -1)
+    if [[ "$OLD_VER" == "$NEW_VER" ]]; then
+      echo "   Bumping revision in tags-info.yaml (version unchanged at ${NEW_VER})"
+      python3 -c "$BUMP_REVISION_PY" "$TAGS_FILE"
+    else
+      echo "   Updating tags-info.yaml -> version ${NEW_VER}, revision 0"
+      python3 -c "$UPDATE_TAGS_PY" "$TAGS_FILE" "$NEW_VER"
+    fi
     git add "$TAGS_FILE"
   fi
 
