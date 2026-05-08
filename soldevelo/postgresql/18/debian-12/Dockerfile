@@ -15,7 +15,6 @@ LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/postgresql/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/postgresql" \
       org.opencontainers.image.title="postgresql" \
-      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/postgresql" \
       org.opencontainers.image.vendor="SolDevelo" \
       org.opencontainers.image.version="18.3.0"
 

@@ -13,7 +13,6 @@ LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/mariadb/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/mariadb" \
       org.opencontainers.image.title="mariadb" \
-      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/mariadb" \
       org.opencontainers.image.vendor="SolDevelo" \
       org.opencontainers.image.version="12.2.2"
 
