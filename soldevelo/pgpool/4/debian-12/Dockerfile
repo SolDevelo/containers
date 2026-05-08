@@ -13,7 +13,6 @@ LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/pgpool/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/pgpool" \
       org.opencontainers.image.title="pgpool" \
-      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/pgpool" \
       org.opencontainers.image.vendor="SolDevelo" \
       org.opencontainers.image.version="4.7.1"
 
