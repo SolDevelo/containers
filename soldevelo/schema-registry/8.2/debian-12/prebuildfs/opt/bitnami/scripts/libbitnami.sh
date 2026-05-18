@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2026 SolDevelo
 # Based on Bitnami Schema Registry © Broadcom, Inc. (Apache-2.0)
 # SPDX-License-Identifier: Apache-2.0
