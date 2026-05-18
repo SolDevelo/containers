@@ -29,6 +29,7 @@ MODE="${1:-diff}"
 BITNAMI_REMOTE="bitnami"
 BITNAMI_REPO="https://github.com/bitnami/containers.git"
 HISTORY_DEEPEN_LEVEL=0
+IS_SHALLOW_REPOSITORY=$(git rev-parse --is-shallow-repository 2>/dev/null || echo true)
 
 # ---------------------------------------------------------------------------
 # Python script: merge upstream file while preserving our leading comment header.
@@ -147,6 +148,34 @@ while header and header[-1].strip() == "":
     header.pop()
 header.append("\n")
 sys.stdout.writelines(header)
+'
+
+# ---------------------------------------------------------------------------
+# Python helper: replace print_image_welcome_page() in target with the one
+# from our source file. Used for libbitnami.sh to preserve SolDevelo messages.
+# Takes (our_source_file, target_file_to_patch) and writes result to stdout.
+# Exits non-zero when the function is missing in either file.
+# ---------------------------------------------------------------------------
+PATCH_WELCOME_FUNCTION_PY='
+import sys, re
+
+our_path, target_path = sys.argv[1], sys.argv[2]
+
+with open(our_path) as f:
+  our = f.read()
+with open(target_path) as f:
+  target = f.read()
+
+func_re = re.compile(r"(?ms)^print_image_welcome_page\(\)\s*\{.*?^\}")
+
+our_match = func_re.search(our)
+target_match = func_re.search(target)
+
+if not our_match or not target_match:
+  sys.exit(2)
+
+patched = target[:target_match.start()] + our_match.group(0) + target[target_match.end():]
+sys.stdout.write(patched)
 '
 
 # ---------------------------------------------------------------------------
@@ -475,31 +504,92 @@ sync_subdir() {
             rm -f "$our_stripped_f" "$upstream_stripped_f" "$merge_tmp" "$ancestor_tmp" "$ancestor_stripped_f"
             continue
           fi
+
+          # For libbitnami.sh, always preserve our custom welcome-page function.
+          if [[ "$(basename "$rel")" == "libbitnami.sh" ]]; then
+            if ! python3 -c "$PATCH_WELCOME_FUNCTION_PY" "$our_file" "${our_file}.merged" \
+              > "${our_file}.patched" 2>/dev/null; then
+              MANUAL_REVIEW+=("${local_dir}/${rel}")
+              echo "     ! failed to preserve custom welcome function; kept ours (manual review needed): $rel"
+              rm -f "${our_file}.merged" "${our_file}.patched"
+              rm -f "$our_stripped_f" "$upstream_stripped_f" "$merge_tmp" "$ancestor_tmp" "$ancestor_stripped_f"
+              continue
+            fi
+            mv "${our_file}.patched" "${our_file}.merged"
+          fi
+
           mv "${our_file}.merged" "$our_file"
           git add "$our_file"
           echo "     ~ auto-merged (3-way): $rel"
         else
-          # Conflicts - keep our version, flag for manual review
-          MANUAL_REVIEW+=("${local_dir}/${rel}")
-          echo "     ! merge conflict; kept ours (review needed): $rel"
+          # Conflicts: for libbitnami.sh try upstream merge + preserve welcome
+          # function; otherwise keep ours and flag for review.
+          if [[ "$(basename "$rel")" == "libbitnami.sh" ]]; then
+            local result_tmp
+            result_tmp=$(mktemp)
+            if python3 -c "$MERGE_FILE_PY" "$our_file" "$upstream_file" "script" > "$result_tmp" 2>/dev/null \
+              && python3 -c "$PATCH_WELCOME_FUNCTION_PY" "$our_file" "$result_tmp" > "${result_tmp}.patched" 2>/dev/null; then
+              mv "${result_tmp}.patched" "$our_file"
+              git add "$our_file"
+              MANUAL_REVIEW+=("${local_dir}/${rel}")
+              echo "     ~ conflict fallback merged upstream and preserved welcome function (manual review recommended): $rel"
+            else
+              MANUAL_REVIEW+=("${local_dir}/${rel}")
+              echo "     ! merge conflict; kept ours (review needed): $rel"
+            fi
+            rm -f "$result_tmp" "${result_tmp}.patched"
+          else
+            MANUAL_REVIEW+=("${local_dir}/${rel}")
+            echo "     ! merge conflict; kept ours (review needed): $rel"
+          fi
         fi
 
         rm -f "$our_stripped_f" "$upstream_stripped_f" "$merge_tmp"
       else
         # No ancestor found in shallow history even after deepening.
-        # prebuildfs/ contains pure bitnami infrastructure scripts that SolDevelo
-        # never modifies — take upstream content wholesale (preserving our header).
-        # rootfs/ scripts may contain our custom logic, so keep ours for safety.
-        if [[ "$subdir" == "prebuildfs" ]]; then
+        # Conservative policy for shallow repos: always manual review.
+        # Optimization for full-history clones: manual review only when upstream
+        # history shows multiple revisions for this path.
+        local should_review=1
+        local upstream_revisions=0
+
+        if [[ "$IS_SHALLOW_REPOSITORY" != "true" ]]; then
+          upstream_revisions=$(git log --oneline -n 2 \
+            "remotes/${BITNAMI_REMOTE}/main" -- "${upstream_dir}/${rel}" 2>/dev/null \
+            | wc -l | tr -d '[:space:]')
+          if [[ "${upstream_revisions:-0}" -lt 2 ]]; then
+            should_review=0
+          fi
+        fi
+
+        if [[ "$(basename "$rel")" == "libbitnami.sh" ]]; then
+          local result_tmp
           result_tmp=$(mktemp)
-          python3 -c "$MERGE_FILE_PY" "$our_file" "$upstream_file" "script" > "$result_tmp"
-          mv "$result_tmp" "$our_file"
-          git add "$our_file"
-          echo "     ~ took upstream (prebuildfs, no ancestor): $rel"
+          if python3 -c "$MERGE_FILE_PY" "$our_file" "$upstream_file" "script" > "$result_tmp" 2>/dev/null \
+            && python3 -c "$PATCH_WELCOME_FUNCTION_PY" "$our_file" "$result_tmp" > "${result_tmp}.patched" 2>/dev/null; then
+            mv "${result_tmp}.patched" "$our_file"
+            git add "$our_file"
+            if [[ "$should_review" -eq 1 ]]; then
+              MANUAL_REVIEW+=("${local_dir}/${rel}")
+              echo "     ~ no ancestor fallback merged upstream and preserved welcome function (manual review required): $rel"
+              echo "       upstream diff: git diff remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/${rel} -- ${our_file}"
+            else
+              echo "     ~ no ancestor fallback merged upstream and preserved welcome function (full history: no manual review): $rel"
+            fi
+          else
+            MANUAL_REVIEW+=("${local_dir}/${rel}")
+            echo "     ! no ancestor; kept ours (manual review needed): $rel"
+            echo "       upstream diff: git diff remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/${rel} -- ${our_file}"
+          fi
+          rm -f "$result_tmp" "${result_tmp}.patched"
         else
-          MANUAL_REVIEW+=("${local_dir}/${rel}")
-          echo "     ! no ancestor; kept ours (manual review needed): $rel"
-          echo "       upstream diff: git diff remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/${rel} -- ${our_file}"
+          if [[ "$should_review" -eq 1 ]]; then
+            MANUAL_REVIEW+=("${local_dir}/${rel}")
+            echo "     ! no ancestor; kept ours (manual review needed): $rel"
+            echo "       upstream diff: git diff remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/${rel} -- ${our_file}"
+          else
+            echo "     ~ no ancestor; kept ours (full history and no upstream revision signal): $rel"
+          fi
         fi
       fi
 
@@ -696,6 +786,13 @@ for local_dir in "${CHANGED[@]}"; do
 
   # -- all subdirectories (file-by-file, preserving our functional changes) ---
   sync_all_subdirs "$upstream_dir" "$local_dir"
+
+  # If nothing changed for this image after merge steps, skip tags-info update.
+  if git diff --quiet -- "$local_dir" && git diff --cached --quiet -- "$local_dir"; then
+    echo "   No effective changes detected; skipping tags-info.yaml"
+    echo ""
+    continue
+  fi
 
   # -- tags-info.yaml ------------------------------------------------------
   TAGS_FILE="${local_dir}/tags-info.yaml"
