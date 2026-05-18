@@ -4,9 +4,6 @@
 #
 # Bitnami custom library
 
-# shellcheck disable=SC1091
-
-# Load Generic Libraries
 . /opt/bitnami/scripts/liblog.sh
 
 # Constants
