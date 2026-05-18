@@ -44,10 +44,7 @@ ENV OS_ARCH="${TARGETARCH:-amd64}"
 LABEL org.opencontainers.image.base.name="scratch" \
       org.opencontainers.image.created="2026-05-08T02:52:04Z" \
       org.opencontainers.image.description="Prometheus container image packaged by SolDevelo, based on Bitnami's work" \
-      org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/prometheus/README.md" \
-      org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/prometheus" \
       org.opencontainers.image.title="prometheus" \
-      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/prometheus" \
       org.opencontainers.image.vendor="SolDevelo" \
       org.opencontainers.image.version="3.11.3"
 
