@@ -1,5 +1,5 @@
 # Copyright 2026 SolDevelo
-# Based on Bitnami MongoDB © Broadcom, Inc. (Apache-2.0)
+# Based on Bitnami kubectl © Broadcom, Inc. (Apache-2.0)
 # SPDX-License-Identifier: Apache-2.0
 
 FROM docker.io/bitnami/minideb:bookworm
@@ -8,13 +8,14 @@ ARG DOWNLOADS_URL="downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-05-08T19:53:23Z" \
-      org.opencontainers.image.description="MongoDB container image packaged by SolDevelo, based on Bitnami's work" \
-      org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/mongodb/README.md" \
-      org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/mongodb" \
-      org.opencontainers.image.title="mongodb" \
+      org.opencontainers.image.created="2026-05-17T08:41:51Z" \
+      org.opencontainers.image.description="kubectl container image packaged by SolDevelo, based on Bitnami's work" \
+      org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/kubectl/README.md" \
+      org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/kubectl" \
+      org.opencontainers.image.title="kubectl" \
+      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/kubectl" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="8.2.7"
+      org.opencontainers.image.version="1.36.1"
 
 ENV HOME="/" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -24,16 +25,13 @@ ENV HOME="/" \
 COPY prebuildfs /
 SHELL ["/bin/bash", "-o", "errexit", "-o", "nounset", "-o", "pipefail", "-c"]
 # Install required system packages and dependencies
-RUN install_packages ca-certificates curl libbrotli1 libcom-err2 libcurl4 libffi8 libgcc-s1 libgmp10 libgnutls30 libgssapi-krb5-2 libhogweed6 libidn2-0 libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 libldap-2.5-0 libnettle8 libnghttp2-14 libp11-kit0 libpsl5 librtmp1 libsasl2-2 libssh2-1 libssl3 libtasn1-6 libunistring2 libzstd1 numactl procps zlib1g
+RUN install_packages ca-certificates curl gettext git jq procps
 RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     DOWNLOADS_URL=${SECRET_DOWNLOADS_URL:-${DOWNLOADS_URL}} ; \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
       "yq-4.53.2-1-linux-${OS_ARCH}-debian-12" \
-      "wait-for-port-1.0.10-10-linux-${OS_ARCH}-debian-12" \
-      "render-template-1.0.9-165-linux-${OS_ARCH}-debian-12" \
-      "mongodb-shell-2.8.3-0-linux-${OS_ARCH}-debian-12" \
-      "mongodb-8.2.7-2-linux-${OS_ARCH}-debian-12" \
+      "kubectl-1.36.1-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -47,18 +45,15 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
 RUN apt-get update && apt-get upgrade -y && \
     apt-get clean && rm -rf /var/lib/apt/lists /var/cache/apt/archives
 RUN chmod g+rwX /opt/bitnami
+RUN mkdir /.kube && chmod g+rwX /.kube
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
 RUN uninstall_packages curl
 
-COPY rootfs /
-RUN /opt/bitnami/scripts/mongodb/postunpack.sh
-ENV APP_VERSION="8.2.7" \
-    BITNAMI_APP_NAME="mongodb" \
+ENV APP_VERSION="1.36.1" \
+    BITNAMI_APP_NAME="kubectl" \
     IMAGE_REVISION="2" \
-    PATH="/opt/bitnami/common/bin:/opt/bitnami/mongodb/bin:$PATH"
-
-EXPOSE 27017
+    PATH="/opt/bitnami/common/bin:/opt/bitnami/kubectl/bin:$PATH"
 
 USER 1001
-ENTRYPOINT [ "/opt/bitnami/scripts/mongodb/entrypoint.sh" ]
-CMD [ "/opt/bitnami/scripts/mongodb/run.sh" ]
+ENTRYPOINT [ "kubectl" ]
+CMD [ "--help" ]

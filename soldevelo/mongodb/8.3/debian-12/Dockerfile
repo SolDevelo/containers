@@ -8,13 +8,14 @@ ARG DOWNLOADS_URL="downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-05-08T19:53:23Z" \
+      org.opencontainers.image.created="2026-05-17T09:29:44Z" \
       org.opencontainers.image.description="MongoDB container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/mongodb/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/mongodb" \
       org.opencontainers.image.title="mongodb" \
+      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/mongodb" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="8.2.7"
+      org.opencontainers.image.version="8.3.2"
 
 ENV HOME="/" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -33,7 +34,7 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
       "wait-for-port-1.0.10-10-linux-${OS_ARCH}-debian-12" \
       "render-template-1.0.9-165-linux-${OS_ARCH}-debian-12" \
       "mongodb-shell-2.8.3-0-linux-${OS_ARCH}-debian-12" \
-      "mongodb-8.2.7-2-linux-${OS_ARCH}-debian-12" \
+      "mongodb-8.3.2-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -52,7 +53,7 @@ RUN uninstall_packages curl
 
 COPY rootfs /
 RUN /opt/bitnami/scripts/mongodb/postunpack.sh
-ENV APP_VERSION="8.2.7" \
+ENV APP_VERSION="8.3.2" \
     BITNAMI_APP_NAME="mongodb" \
     IMAGE_REVISION="2" \
     PATH="/opt/bitnami/common/bin:/opt/bitnami/mongodb/bin:$PATH"
