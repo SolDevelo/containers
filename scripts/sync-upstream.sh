@@ -28,7 +28,7 @@ cd "$REPO_ROOT"
 MODE="${1:-diff}"
 BITNAMI_REMOTE="bitnami"
 BITNAMI_REPO="https://github.com/bitnami/containers.git"
-HISTORY_DEEPENED=0
+HISTORY_DEEPEN_LEVEL=0
 
 # ---------------------------------------------------------------------------
 # Python script: merge upstream file while preserving our leading comment header.
@@ -189,6 +189,49 @@ sys.stdout.write(content)
 # a conflict on those lines (IMAGE_REVISION, APP_VERSION, image.created, etc.).
 # Reads target from sys.argv[1], upstream reference from sys.argv[2]; writes stdout.
 # ---------------------------------------------------------------------------
+NORMALIZE_VOLATILE_PY='
+import sys, re
+
+target_path, upstream_path = sys.argv[1], sys.argv[2]
+
+with open(upstream_path) as f:
+  upstream = f.read()
+with open(target_path) as f:
+  content = f.read()
+
+# Fields that upstream always owns - normalize ours/ancestor to upstream values
+# so 3-way merge does not preserve stale values from our branch.
+volatile_patterns = [
+  r"IMAGE_REVISION=\"[^\"]*\"",
+  r"APP_VERSION=\"[^\"]*\"",
+  r"org\.opencontainers\.image\.created=\"[^\"]*\"",
+  r"org\.opencontainers\.image\.version=\"[^\"]*\"",
+  r"org\.opencontainers\.image\.base\.name=\"[^\"]*\"",
+]
+
+for pattern in volatile_patterns:
+  m = re.search(pattern, upstream)
+  if m:
+    content = re.sub(pattern, m.group(0), content)
+
+# Component archive entries in COMPONENTS=(...) are upstream-owned.
+# Pattern: "pkg-name-X.Y.Z-N-linux-${OS_ARCH}-debian-12"
+comp_re = re.compile(
+  r"\"([a-zA-Z][a-zA-Z0-9_-]*?-\d+\.\d+\.\d+)-(\d+)(-(?:linux|aarch64)-[^\"]+)\""
+)
+upstream_comps = {}
+for m in comp_re.finditer(upstream):
+  key = (m.group(1), m.group(3))
+  upstream_comps[key] = m.group(0)
+
+def _norm_comp(match):
+  return upstream_comps.get((match.group(1), match.group(3)), match.group(0))
+
+content = comp_re.sub(_norm_comp, content)
+
+sys.stdout.write(content)
+'
+
 # ---------------------------------------------------------------------------
 # Python script: update tags-info.yaml after a version bump.
 # Replaces X.Y.Z patch-version entries with the new version; resets revision.
@@ -257,20 +300,47 @@ upstream_of() { echo "$1" | sed 's|^soldevelo/|bitnami/|'; }
 # ---------------------------------------------------------------------------
 prev_upstream_sha_for_path() {
   local path="$1"
-  local prev_sha
+  local prev_sha=""
+  local log_out=""
+  local rc=0
 
-  prev_sha=$(git log --oneline -n 2 \
-    "remotes/${BITNAMI_REMOTE}/main" \
-    -- "$path" 2>/dev/null | awk 'NR==2{print $1}')
+  # Helper closure: query "previous" upstream SHA for this path.
+  _query_prev_sha() {
+    git log --oneline -n 2 "remotes/${BITNAMI_REMOTE}/main" -- "$path" 2>&1
+  }
 
-  if [[ -z "$prev_sha" && "$HISTORY_DEEPENED" -eq 0 ]]; then
-    echo "   Deepening ${BITNAMI_REMOTE}/main history to improve 3-way merges..."
-    git fetch "${BITNAMI_REMOTE}" main --deepen=10000 --quiet || true
-    HISTORY_DEEPENED=1
-    prev_sha=$(git log --oneline -n 2 \
-      "remotes/${BITNAMI_REMOTE}/main" \
-      -- "$path" 2>/dev/null | awk 'NR==2{print $1}')
+  # Initial attempt, with one retry if git reports shallow metadata race.
+  log_out=$(_query_prev_sha) || rc=$?
+  if [[ $rc -ne 0 ]] && echo "$log_out" | grep -q "shallow file has changed since we read it"; then
+    rc=0
+    log_out=$(_query_prev_sha) || rc=$?
   fi
+  if [[ $rc -eq 0 ]]; then
+    prev_sha=$(echo "$log_out" | awk 'NR==2{print $1}')
+  fi
+
+  # Progressive deepening: only when needed for this path.
+  while [[ -z "$prev_sha" && "$HISTORY_DEEPEN_LEVEL" -lt 3 ]]; do
+    HISTORY_DEEPEN_LEVEL=$((HISTORY_DEEPEN_LEVEL + 1))
+    case "$HISTORY_DEEPEN_LEVEL" in
+      1) deepen_by=2000 ;;
+      2) deepen_by=5000 ;;
+      3) deepen_by=10000 ;;
+    esac
+
+    echo "   Deepening ${BITNAMI_REMOTE}/main history by ${deepen_by} (path: ${path})..."
+    git fetch "${BITNAMI_REMOTE}" main --deepen="${deepen_by}" --quiet || true
+
+    rc=0
+    log_out=$(_query_prev_sha) || rc=$?
+    if [[ $rc -ne 0 ]] && echo "$log_out" | grep -q "shallow file has changed since we read it"; then
+      rc=0
+      log_out=$(_query_prev_sha) || rc=$?
+    fi
+    if [[ $rc -eq 0 ]]; then
+      prev_sha=$(echo "$log_out" | awk 'NR==2{print $1}')
+    fi
+  done
 
   echo "$prev_sha"
 }
@@ -567,22 +637,61 @@ for local_dir in "${CHANGED[@]}"; do
   upstream_dir=$(upstream_of "$local_dir")
   echo "[sync] ${local_dir}"
 
-  # -- Dockerfile: always take upstream body, preserving our header + labels --
-  # We do NOT use 3-way merge for Dockerfiles.  The only SolDevelo-specific
-  # content is the header comment block and four OCI label overrides — both
-  # are preserved by MERGE_FILE_PY.  A 3-way merge with the previous upstream
-  # commit as the ancestor fails silently when upstream's "latest change" to a
-  # file was more than one commit ago: git sees ancestor==upstream for that
-  # line and "ours changed it", so it takes our stale value (e.g. keeping an
-  # old JRE component version instead of picking up the newer upstream one).
-  echo "   Syncing Dockerfile from upstream..."
+  # -- Dockerfile: 3-way merge with upstream-history ancestor -----------------
+  # Keeps our header + selected OCI labels while still preserving our functional
+  # additions. If no ancestor or merge conflicts occur, fall back to upstream body.
+  echo "   Merging Dockerfile..."
   upstream_df=$(mktemp)
+  ancestor_df=$(mktemp)
+  our_stripped_df=$(mktemp)
+  upstream_stripped_df=$(mktemp)
+  ancestor_stripped_df=$(mktemp)
+  merge_df=$(mktemp)
   result_df=$(mktemp)
+  norm_tmp=$(mktemp)
   git show "remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/Dockerfile" > "$upstream_df"
-  python3 -c "$MERGE_FILE_PY" "${local_dir}/Dockerfile" "$upstream_df" "dockerfile" > "$result_df"
-  mv "$result_df" "${local_dir}/Dockerfile"
-  rm -f "$upstream_df"
-  echo "     ~ synced from upstream: Dockerfile"
+
+  prev_df_sha=$(prev_upstream_sha_for_path "${upstream_dir}/Dockerfile")
+  if [[ -n "$prev_df_sha" ]]; then
+    git show "${prev_df_sha}:${upstream_dir}/Dockerfile" > "$ancestor_df" 2>/dev/null || true
+  fi
+
+  if [[ -s "$ancestor_df" ]]; then
+    python3 -c "$STRIP_HEADER_PY" "${local_dir}/Dockerfile" > "$our_stripped_df"
+    python3 -c "$STRIP_HEADER_PY" "$upstream_df" > "$upstream_stripped_df"
+    python3 -c "$STRIP_HEADER_PY" "$ancestor_df" > "$ancestor_stripped_df"
+
+    # Normalize upstream-owned values before 3-way to avoid stale component pins.
+    python3 -c "$NORMALIZE_VOLATILE_PY" "$our_stripped_df" "$upstream_stripped_df" > "$norm_tmp"
+    mv "$norm_tmp" "$our_stripped_df"
+    python3 -c "$NORMALIZE_VOLATILE_PY" "$ancestor_stripped_df" "$upstream_stripped_df" > "$norm_tmp"
+    mv "$norm_tmp" "$ancestor_stripped_df"
+
+    cp "$our_stripped_df" "$merge_df"
+    df_merge_rc=0
+    git merge-file --quiet "$merge_df" "$ancestor_stripped_df" "$upstream_stripped_df" \
+      2>/dev/null || df_merge_rc=$?
+
+    if [[ $df_merge_rc -eq 0 ]]; then
+      python3 -c "$EXTRACT_HEADER_PY" "${local_dir}/Dockerfile" > "$result_df"
+      cat "$merge_df" >> "$result_df"
+      python3 -c "$PATCH_LABELS_PY" "${local_dir}/Dockerfile" "$result_df" > "${result_df}.patched"
+      mv "${result_df}.patched" "${local_dir}/Dockerfile"
+      echo "     ~ auto-merged (3-way): Dockerfile"
+    else
+      python3 -c "$MERGE_FILE_PY" "${local_dir}/Dockerfile" "$upstream_df" "dockerfile" > "$result_df"
+      mv "$result_df" "${local_dir}/Dockerfile"
+      MANUAL_REVIEW+=("${local_dir}/Dockerfile")
+      echo "     ! merge conflict; took upstream body (review needed): Dockerfile"
+    fi
+  else
+    python3 -c "$MERGE_FILE_PY" "${local_dir}/Dockerfile" "$upstream_df" "dockerfile" > "$result_df"
+    mv "$result_df" "${local_dir}/Dockerfile"
+    MANUAL_REVIEW+=("${local_dir}/Dockerfile")
+    echo "     ! no ancestor; took upstream Dockerfile body (manual review needed): Dockerfile"
+  fi
+
+  rm -f "$upstream_df" "$ancestor_df" "$our_stripped_df" "$upstream_stripped_df" "$ancestor_stripped_df" "$merge_df" "$result_df" "$norm_tmp"
   git add "${local_dir}/Dockerfile"
 
   # -- all subdirectories (file-by-file, preserving our functional changes) ---
