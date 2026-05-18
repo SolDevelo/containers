@@ -7,6 +7,7 @@
 # shellcheck disable=SC1090,SC1091,SC2119,SC2120
 
 # Load Generic Libraries
+
 . /opt/bitnami/scripts/libfile.sh
 . /opt/bitnami/scripts/liblog.sh
 . /opt/bitnami/scripts/libfs.sh
@@ -161,6 +162,10 @@ plugin_dir=${DB_BASE_DIR}/lib/plugin
 datadir=${DB_DATA_DIR}
 
 [client]
+port=${DB_DEFAULT_PORT_NUMBER}
+socket=${DB_SOCKET_FILE}
+
+[mysql]
 port=${DB_DEFAULT_PORT_NUMBER}
 socket=${DB_SOCKET_FILE}
 default_character_set=${DB_DEFAULT_CHARACTER_SET}
