@@ -151,6 +151,51 @@ sys.stdout.writelines(header)
 '
 
 # ---------------------------------------------------------------------------
+# Python helper: replace COMPONENTS=(...) block in target Dockerfile with the
+# upstream block. This prevents stale component versions when 3-way merge keeps
+# older local values on unchanged upstream hunks.
+# Takes (upstream_file, target_file_to_patch) and writes result to stdout.
+# ---------------------------------------------------------------------------
+PATCH_COMPONENTS_FROM_UPSTREAM_PY='
+import sys
+
+upstream_path, target_path = sys.argv[1], sys.argv[2]
+
+with open(upstream_path) as f:
+  upstream = f.read()
+with open(target_path) as f:
+  target = f.read()
+
+def find_components_block(content):
+  lines = content.splitlines(True)
+  start = -1
+  end = -1
+  for i, line in enumerate(lines):
+    if "COMPONENTS=(" in line:
+      start = i
+      break
+  if start == -1:
+    return None
+  for j in range(start, len(lines)):
+    if lines[j].strip().startswith(") ;"):
+      end = j
+      break
+  if end == -1:
+    return None
+  return (start, end + 1, lines)
+
+u = find_components_block(upstream)
+t = find_components_block(target)
+
+if u and t:
+  us, ue, ul = u
+  ts, te, tl = t
+  target = "".join(tl[:ts] + ul[us:ue] + tl[te:])
+
+sys.stdout.write(target)
+'
+
+# ---------------------------------------------------------------------------
 # Python helper: replace print_image_welcome_page() in target with the one
 # from our source file. Used for libbitnami.sh to preserve SolDevelo messages.
 # Takes (our_source_file, target_file_to_patch) and writes result to stdout.
@@ -276,10 +321,11 @@ with open(tags_path) as f:
 # Reset revision counter
 content = re.sub(r"^revision:\s*\d+", "revision: 0", content, flags=re.MULTILINE)
 
-# Replace any X.Y.Z version string in rolling-tags (quoted or bare)
+# Update rolling-tags entries that start with X.Y.Z.
+# Handles both plain tags (e.g. 8.2.0) and suffixed tags (e.g. 8.2.0-debian-12).
 content = re.sub(
-    r"(^\s*-\s*\"?)(\d+\.\d+\.\d+)(\"?\s*$)",
-    lambda m: m.group(1) + new_ver + m.group(3),
+  r"(^\s*-\s*\"?)(\d+\.\d+\.\d+)([^\"\n]*)(\"?\s*$)",
+  lambda m: m.group(1) + new_ver + m.group(3) + m.group(4),
     content,
     flags=re.MULTILINE,
 )
@@ -531,8 +577,7 @@ sync_subdir() {
               && python3 -c "$PATCH_WELCOME_FUNCTION_PY" "$our_file" "$result_tmp" > "${result_tmp}.patched" 2>/dev/null; then
               mv "${result_tmp}.patched" "$our_file"
               git add "$our_file"
-              MANUAL_REVIEW+=("${local_dir}/${rel}")
-              echo "     ~ conflict fallback merged upstream and preserved welcome function (manual review recommended): $rel"
+              echo "     ~ conflict fallback merged upstream and preserved welcome function: $rel"
             else
               MANUAL_REVIEW+=("${local_dir}/${rel}")
               echo "     ! merge conflict; kept ours (review needed): $rel"
@@ -570,9 +615,7 @@ sync_subdir() {
             mv "${result_tmp}.patched" "$our_file"
             git add "$our_file"
             if [[ "$should_review" -eq 1 ]]; then
-              MANUAL_REVIEW+=("${local_dir}/${rel}")
-              echo "     ~ no ancestor fallback merged upstream and preserved welcome function (manual review required): $rel"
-              echo "       upstream diff: git diff remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/${rel} -- ${our_file}"
+              echo "     ~ no ancestor fallback merged upstream and preserved welcome function: $rel"
             else
               echo "     ~ no ancestor fallback merged upstream and preserved welcome function (full history: no manual review): $rel"
             fi
@@ -725,6 +768,15 @@ MANUAL_REVIEW=()
 
 for local_dir in "${CHANGED[@]}"; do
   upstream_dir=$(upstream_of "$local_dir")
+
+  # Upstream may delete/move a path between sync runs; skip safely in apply mode.
+  if ! git rev-parse "remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/Dockerfile" &>/dev/null; then
+    echo "[sync] ${local_dir}"
+    echo "   ! upstream Dockerfile missing; skipping"
+    echo ""
+    continue
+  fi
+
   echo "[sync] ${local_dir}"
 
   # -- Dockerfile: 3-way merge with upstream-history ancestor -----------------
@@ -765,6 +817,12 @@ for local_dir in "${CHANGED[@]}"; do
     if [[ $df_merge_rc -eq 0 ]]; then
       python3 -c "$EXTRACT_HEADER_PY" "${local_dir}/Dockerfile" > "$result_df"
       cat "$merge_df" >> "$result_df"
+      if python3 -c "$PATCH_COMPONENTS_FROM_UPSTREAM_PY" "$upstream_df" "$result_df" > "${result_df}.components" 2>/dev/null; then
+        mv "${result_df}.components" "$result_df"
+      else
+        rm -f "${result_df}.components"
+        echo "     ! components patch failed; keeping merged COMPONENTS block"
+      fi
       python3 -c "$PATCH_LABELS_PY" "${local_dir}/Dockerfile" "$result_df" > "${result_df}.patched"
       mv "${result_df}.patched" "${local_dir}/Dockerfile"
       echo "     ~ auto-merged (3-way): Dockerfile"
@@ -797,8 +855,12 @@ for local_dir in "${CHANGED[@]}"; do
   # -- tags-info.yaml ------------------------------------------------------
   TAGS_FILE="${local_dir}/tags-info.yaml"
   if [[ -f "$TAGS_FILE" ]]; then
-    NEW_VER=$(grep -m1 'org.opencontainers.image.version' "${local_dir}/Dockerfile" \
+    NEW_VER=$(grep -m1 'APP_VERSION=' "${local_dir}/Dockerfile" \
       | grep -oE '[0-9]+(\.[0-9]+)*' | head -1)
+    if [[ -z "$NEW_VER" ]]; then
+      NEW_VER=$(grep -m1 'org.opencontainers.image.version' "${local_dir}/Dockerfile" \
+        | grep -oE '[0-9]+(\.[0-9]+)*' | head -1)
+    fi
     # Some images (e.g. os-shell) intentionally use non-patch tags like "12"
     # and have no X.Y.Z in tags-info.yaml. Do not fail on missing semver.
     OLD_VER=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "$TAGS_FILE" | head -1 || true)
