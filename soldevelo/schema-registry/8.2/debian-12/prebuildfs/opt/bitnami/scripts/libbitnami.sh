@@ -4,9 +4,6 @@
 #
 # Bitnami custom library
 
-# shellcheck disable=SC1091
-
-# Load Generic Libraries
 . /opt/bitnami/scripts/liblog.sh
 
 # Constants
@@ -42,10 +39,10 @@ print_welcome_page() {
 #   None
 #########################
 print_image_welcome_page() {
-    local github_url="https://github.com/soldevelo/containers"
+    local github_url="https://github.com/bitnami/containers"
 
     info ""
-    info "${BOLD}Welcome to the SolDevelo ${BITNAMI_APP_NAME} container${RESET}"
+    info "${BOLD}Welcome to the Bitnami ${BITNAMI_APP_NAME} container${RESET}"
     info ""
 }
 
