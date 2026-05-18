@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: main  # always base the sync branch on main, regardless of which branch triggered this
           # Use a PAT so the created PR can trigger other workflows
           token: ${{ secrets.SYNC_PAT || github.token }}
 
@@ -29,7 +30,9 @@ jobs:
       - name: Add bitnami remote and fetch
         run: |
           git remote add bitnami https://github.com/bitnami/containers.git || true
-          git fetch bitnami main --depth=1 --quiet
+          # depth=200 matches what sync-upstream.sh needs for 3-way merges.
+          # Fetch once here; the script detects the ref and skips its own fetch.
+          git fetch bitnami main --depth=200 --quiet
 
       - name: Run sync check
         id: sync
@@ -53,7 +56,12 @@ jobs:
         if: steps.sync.outputs.has_changes == 'true'
         id: apply
         run: |
-          bash scripts/sync-upstream.sh apply 2>&1 | tee /tmp/apply-output.txt
+          # Redirect instead of pipe so the script's exit code is not swallowed by tee.
+          if ! bash scripts/sync-upstream.sh apply > /tmp/apply-output.txt 2>&1; then
+            cat /tmp/apply-output.txt
+            exit 1
+          fi
+          cat /tmp/apply-output.txt
           BRANCH=$(git branch --show-current)
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "apply_output<<EOF" >> "$GITHUB_OUTPUT"
@@ -61,16 +69,40 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
 
           # Extract files needing manual review from [REVIEW] markers
-          REVIEW_FILES=$(grep '\[REVIEW\]' /tmp/apply-output.txt | sed 's/.*\[REVIEW\] //' | tr '\n' '|' | sed 's/|$//')
+          REVIEW_FILES=$(grep '\[REVIEW\]' /tmp/apply-output.txt | sed 's/.*\[REVIEW\] //' | tr '\n' '|' | sed 's/|$//' || true)
           echo "review_files=$REVIEW_FILES" >> "$GITHUB_OUTPUT"
 
-      - name: Push sync branch
+      - name: Check if sync branch has commits ahead of main
         if: steps.sync.outputs.has_changes == 'true'
+        id: diff
         run: |
-          git push origin "${{ steps.apply.outputs.branch }}" --force-with-lease
+          BRANCH="${{ steps.apply.outputs.branch }}"
+          if [[ -z "$BRANCH" ]]; then
+            echo "has_commits=false" >> "$GITHUB_OUTPUT"
+            echo "ahead=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          AHEAD=$(git rev-list --count "main..${BRANCH}")
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+          if [[ "$AHEAD" -gt 0 ]]; then
+            echo "has_commits=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_commits=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push sync branch
+        if: steps.sync.outputs.has_changes == 'true' && steps.diff.outputs.has_commits == 'true'
+        run: |
+          BRANCH="${{ steps.apply.outputs.branch }}"
+          if [[ -z "$BRANCH" ]]; then
+            echo "::error::Apply step did not produce a branch name - check the apply step output for errors"
+            exit 1
+          fi
+          git push origin "$BRANCH" --force-with-lease
 
       - name: Create Pull Request
-        if: steps.sync.outputs.has_changes == 'true'
+        if: steps.sync.outputs.has_changes == 'true' && steps.diff.outputs.has_commits == 'true'
         uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.SYNC_PAT || github.token }}
@@ -123,15 +155,46 @@ jobs:
               '</details>',
             ].join('\n');
 
-            await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `chore: sync upstream bitnami changes (${changed})`,
-              head: branch,
+            const title = `chore: sync upstream bitnami changes (${changed})`;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const existing = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              head: `${owner}:${branch}`,
               base: 'main',
-              body,
+              per_page: 1,
             });
+
+            if (existing.data.length > 0) {
+              const pr = existing.data[0];
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number: pr.number,
+                title,
+                body,
+              });
+              core.info(`Updated existing PR #${pr.number} for branch ${branch}`);
+            } else {
+              await github.rest.pulls.create({
+                owner,
+                repo,
+                title,
+                head: branch,
+                base: 'main',
+                body,
+              });
+            }
 
       - name: No changes found
         if: steps.sync.outputs.has_changes == 'false'
         run: echo "All images are up to date with upstream bitnami. No PR created."
+
+      - name: No commits after apply
+        if: steps.sync.outputs.has_changes == 'true' && steps.diff.outputs.has_commits == 'false'
+        run: |
+          echo "Sync detected changes in check mode, but apply produced no commits ahead of main."
+          echo "Most likely: an existing branch was reused without new changes, or apply exited early before committing."

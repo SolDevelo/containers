@@ -20,6 +20,7 @@
 #   tags-info.yaml             - patch version updated; revision reset to 0
 
 set -euo pipefail
+trap 'echo "ERROR: sync-upstream.sh failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
 REPO_ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
@@ -317,8 +318,13 @@ sync_subdir() {
   strip=$(( $(echo "${upstream_dir}" | tr -cd '/' | wc -c) + 1 ))
   local tmpd
   tmpd=$(mktemp -d)
-  git archive "remotes/${BITNAMI_REMOTE}/main" "${upstream_dir}/${subdir}/" \
-    | tar -x --strip-components="${strip}" -C "${tmpd}"
+  if ! git archive "remotes/${BITNAMI_REMOTE}/main" "${upstream_dir}/${subdir}/" \
+    | tar -x --strip-components="${strip}" -C "${tmpd}"; then
+    MANUAL_REVIEW+=("${local_dir}/${subdir}/")
+    echo "     ! failed to extract upstream ${subdir}/; kept ours (manual review needed)"
+    rm -rf "$tmpd"
+    return 0
+  fi
 
   # Walk every file upstream provides
   while IFS= read -r upstream_file; do
@@ -338,13 +344,28 @@ sync_subdir() {
       continue  # identical, nothing to do
     fi
 
-    # Files differ - check if it's header-only or functional
-    our_functional=$(python3 -c "$STRIP_HEADER_PY" "$our_file")
-    upstream_functional=$(python3 -c "$STRIP_HEADER_PY" "$upstream_file")
+    # Files differ - check if it's header-only or functional.
+    # If a file cannot be processed by the Python helper (e.g. unexpected encoding),
+    # keep ours and mark it for manual review instead of aborting the whole sync run.
+    if ! our_functional=$(python3 -c "$STRIP_HEADER_PY" "$our_file" 2>/dev/null); then
+      MANUAL_REVIEW+=("${local_dir}/${rel}")
+      echo "     ! strip-header failed; kept ours (manual review needed): $rel"
+      continue
+    fi
+    if ! upstream_functional=$(python3 -c "$STRIP_HEADER_PY" "$upstream_file" 2>/dev/null); then
+      MANUAL_REVIEW+=("${local_dir}/${rel}")
+      echo "     ! strip-header failed for upstream; kept ours (manual review needed): $rel"
+      continue
+    fi
 
     if [[ "$our_functional" == "$upstream_functional" ]]; then
       # Only header differs (branding, copyright) - apply header-merge
-      python3 -c "$MERGE_FILE_PY" "$our_file" "$upstream_file" "script" > "${our_file}.merged"
+      if ! python3 -c "$MERGE_FILE_PY" "$our_file" "$upstream_file" "script" > "${our_file}.merged" 2>/dev/null; then
+        MANUAL_REVIEW+=("${local_dir}/${rel}")
+        echo "     ! header-merge failed; kept ours (manual review needed): $rel"
+        rm -f "${our_file}.merged"
+        continue
+      fi
       mv "${our_file}.merged" "$our_file"
       git add "$our_file"
       echo "     ~ header-merged: $rel"
@@ -363,7 +384,12 @@ sync_subdir() {
         git show "${prev_sha}:${upstream_dir}/${rel}" > "$ancestor_tmp" 2>/dev/null || true
       fi
       if [[ -s "$ancestor_tmp" ]]; then
-        python3 -c "$STRIP_HEADER_PY" "$ancestor_tmp" > "$ancestor_stripped_f"
+        if ! python3 -c "$STRIP_HEADER_PY" "$ancestor_tmp" > "$ancestor_stripped_f" 2>/dev/null; then
+          MANUAL_REVIEW+=("${local_dir}/${rel}")
+          echo "     ! strip-header failed for ancestor; kept ours (manual review needed): $rel"
+          rm -f "$ancestor_tmp" "$ancestor_stripped_f"
+          continue
+        fi
       fi
 
       if [[ -s "$ancestor_stripped_f" ]]; then
@@ -373,8 +399,18 @@ sync_subdir() {
         merge_tmp=$(mktemp)
         merge_rc=0
 
-        python3 -c "$STRIP_HEADER_PY" "$our_file"      > "$our_stripped_f"
-        python3 -c "$STRIP_HEADER_PY" "$upstream_file" > "$upstream_stripped_f"
+        if ! python3 -c "$STRIP_HEADER_PY" "$our_file" > "$our_stripped_f" 2>/dev/null; then
+          MANUAL_REVIEW+=("${local_dir}/${rel}")
+          echo "     ! strip-header failed during 3-way prep; kept ours (manual review needed): $rel"
+          rm -f "$our_stripped_f" "$upstream_stripped_f" "$merge_tmp" "$ancestor_tmp" "$ancestor_stripped_f"
+          continue
+        fi
+        if ! python3 -c "$STRIP_HEADER_PY" "$upstream_file" > "$upstream_stripped_f" 2>/dev/null; then
+          MANUAL_REVIEW+=("${local_dir}/${rel}")
+          echo "     ! strip-header failed for upstream during 3-way prep; kept ours (manual review needed): $rel"
+          rm -f "$our_stripped_f" "$upstream_stripped_f" "$merge_tmp" "$ancestor_tmp" "$ancestor_stripped_f"
+          continue
+        fi
         cp "$our_stripped_f" "$merge_tmp"
 
         git merge-file --quiet \
@@ -383,8 +419,14 @@ sync_subdir() {
 
         if [[ $merge_rc -eq 0 ]]; then
           # Clean 3-way merge - prepend our header to the merged body
-          python3 -c "$EXTRACT_HEADER_PY" "$our_file" \
-            | cat - "$merge_tmp" > "${our_file}.merged"
+          if ! python3 -c "$EXTRACT_HEADER_PY" "$our_file" \
+            | cat - "$merge_tmp" > "${our_file}.merged"; then
+            MANUAL_REVIEW+=("${local_dir}/${rel}")
+            echo "     ! failed to rebuild merged file; kept ours (manual review needed): $rel"
+            rm -f "${our_file}.merged"
+            rm -f "$our_stripped_f" "$upstream_stripped_f" "$merge_tmp" "$ancestor_tmp" "$ancestor_stripped_f"
+            continue
+          fi
           mv "${our_file}.merged" "$our_file"
           git add "$our_file"
           echo "     ~ auto-merged (3-way): $rel"
@@ -448,10 +490,16 @@ if ! git remote | grep -q "^${BITNAMI_REMOTE}$"; then
   git remote add "${BITNAMI_REMOTE}" "${BITNAMI_REPO}"
 fi
 
-echo "Fetching ${BITNAMI_REMOTE}/main..."
-# depth=200 gives enough history to find the previous upstream version of any recently-changed
-# file across the large bitnami monorepo, which is required for the 3-way merge below.
-git fetch "${BITNAMI_REMOTE}" main --depth=200 --quiet
+# Skip fetch if the remote ref already exists (e.g. the CI workflow pre-fetched it).
+# Fetching multiple times at different depths corrupts git's shallow file.
+if ! git rev-parse "remotes/${BITNAMI_REMOTE}/main" &>/dev/null 2>&1; then
+  echo "Fetching ${BITNAMI_REMOTE}/main..."
+  # depth=200 gives enough history to find the previous upstream version of any recently-changed
+  # file across the large bitnami monorepo, which is required for the 3-way merge below.
+  git fetch "${BITNAMI_REMOTE}" main --depth=200 --quiet
+else
+  echo "Using existing ${BITNAMI_REMOTE}/main"
+fi
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -620,8 +668,10 @@ for local_dir in "${CHANGED[@]}"; do
   if [[ -f "$TAGS_FILE" ]]; then
     NEW_VER=$(grep -m1 'org.opencontainers.image.version' "${local_dir}/Dockerfile" \
       | grep -oE '[0-9]+(\.[0-9]+)*' | head -1)
-    OLD_VER=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "$TAGS_FILE" | head -1)
-    if [[ "$OLD_VER" == "$NEW_VER" ]]; then
+    # Some images (e.g. os-shell) intentionally use non-patch tags like "12"
+    # and have no X.Y.Z in tags-info.yaml. Do not fail on missing semver.
+    OLD_VER=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "$TAGS_FILE" | head -1 || true)
+    if [[ -z "$OLD_VER" || "$OLD_VER" == "$NEW_VER" ]]; then
       echo "   Bumping revision in tags-info.yaml (version unchanged at ${NEW_VER})"
       python3 -c "$BUMP_REVISION_PY" "$TAGS_FILE"
     else
