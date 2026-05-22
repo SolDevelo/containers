@@ -1,0 +1,62 @@
+# Copyright 2026 SolDevelo
+# Based on Bitnami Redis © Broadcom, Inc. (Apache-2.0)
+# SPDX-License-Identifier: Apache-2.0
+
+FROM docker.io/bitnami/minideb:bookworm
+
+ARG TARGETARCH
+
+LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
+      org.opencontainers.image.created="2024-07-25T07:34:36Z" \
+      org.opencontainers.image.description="Redis container image packaged by SolDevelo, based on Bitnami's work" \
+      org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/redis/README.md" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.ref.name="7.0.15-debian-12-r20" \
+      org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/redis" \
+      org.opencontainers.image.title="redis" \
+      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/redis" \
+      org.opencontainers.image.vendor="SolDevelo" \
+      org.opencontainers.image.version="7.0.15"
+
+ENV HOME="/" \
+    OS_ARCH="${TARGETARCH:-amd64}" \
+    OS_FLAVOUR="debian-12" \
+    OS_NAME="linux"
+
+COPY prebuildfs /
+SHELL ["/bin/bash", "-o", "errexit", "-o", "nounset", "-o", "pipefail", "-c"]
+# Install required system packages and dependencies
+RUN install_packages ca-certificates curl libgomp1 libssl3 procps
+RUN mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ ; \
+    COMPONENTS=( \
+      "wait-for-port-1.0.8-2-linux-${OS_ARCH}-debian-12" \
+      "redis-7.0.15-10-linux-${OS_ARCH}-debian-12" \
+    ) ; \
+    for COMPONENT in "${COMPONENTS[@]}"; do \
+      if [ ! -f "${COMPONENT}.tar.gz" ]; then \
+        curl -SsLf "https://downloads.bitnami.com/files/stacksmith/${COMPONENT}.tar.gz" -O ; \
+        curl -SsLf "https://downloads.bitnami.com/files/stacksmith/${COMPONENT}.tar.gz.sha256" -O ; \
+      fi ; \
+      sha256sum -c "${COMPONENT}.tar.gz.sha256" ; \
+      tar -zxf "${COMPONENT}.tar.gz" -C /opt/bitnami --strip-components=2 --no-same-owner --wildcards '*/files' ; \
+      rm -rf "${COMPONENT}".tar.gz{,.sha256} ; \
+    done
+RUN apt-get autoremove --purge -y curl && \
+    apt-get update && apt-get upgrade -y && \
+    apt-get clean && rm -rf /var/lib/apt/lists /var/cache/apt/archives
+RUN chmod g+rwX /opt/bitnami
+RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
+RUN ln -s /opt/bitnami/scripts/redis/entrypoint.sh /entrypoint.sh
+RUN ln -s /opt/bitnami/scripts/redis/run.sh /run.sh
+
+COPY rootfs /
+RUN /opt/bitnami/scripts/redis/postunpack.sh
+ENV APP_VERSION="7.0.15" \
+    BITNAMI_APP_NAME="redis" \
+    PATH="/opt/bitnami/common/bin:/opt/bitnami/redis/bin:$PATH"
+
+EXPOSE 6379
+
+USER 1001
+ENTRYPOINT [ "/opt/bitnami/scripts/redis/entrypoint.sh" ]
+CMD [ "/opt/bitnami/scripts/redis/run.sh" ]
