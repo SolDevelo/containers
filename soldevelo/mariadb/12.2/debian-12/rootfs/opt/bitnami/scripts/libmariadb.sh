@@ -4,10 +4,6 @@
 #
 # Bitnami MySQL library
 
-# shellcheck disable=SC1090,SC1091,SC2119,SC2120
-
-# Load Generic Libraries
-
 . /opt/bitnami/scripts/libfile.sh
 . /opt/bitnami/scripts/liblog.sh
 . /opt/bitnami/scripts/libfs.sh
