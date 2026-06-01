@@ -7,6 +7,7 @@
 # shellcheck disable=SC1090,SC1091
 
 # Load libraries
+
 . /opt/bitnami/scripts/libfs.sh
 . /opt/bitnami/scripts/liblog.sh
 . /opt/bitnami/scripts/libos.sh
@@ -75,11 +76,11 @@ ldap_openldap_config_path() {
 #   None
 #########################
 ldap_configure_permissions() {
-    ensure_dir_exists "/var/run/nslcd" && configure_permissions_ownership "/var/run/nslcd" -u "root" -g "root" -d "775"
+    ensure_dir_exists "/var/run/nslcd" && configure_permissions_ownership "/var/run/nslcd" -u "root" -g "root" -d "775" -n
     # The nslcd.conf file may not exist in distros like UBI, so we need to create it first
     touch "/etc/nslcd.conf"
-    configure_permissions_ownership "/etc/nslcd.conf" -u "root" -g "root" -f "660"
-    configure_permissions_ownership "$(ldap_openldap_config_path)" -u "root" -g "root" -f "660"
+    configure_permissions_ownership "/etc/nslcd.conf" -u "root" -g "root" -f "660" -n
+    configure_permissions_ownership "$(ldap_openldap_config_path)" -u "root" -g "root" -f "660" -n
 }
 
 ########################
