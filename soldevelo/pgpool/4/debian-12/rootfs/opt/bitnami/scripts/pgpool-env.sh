@@ -12,6 +12,7 @@
 
 # Load logging library
 # shellcheck disable=SC1090,SC1091
+
 . /opt/bitnami/scripts/liblog.sh
 
 export BITNAMI_ROOT_DIR="/opt/bitnami"
@@ -145,7 +146,7 @@ export PGPOOL_POSTGRES_CUSTOM_USERS="${PGPOOL_POSTGRES_CUSTOM_USERS:-}"
 export PGPOOL_POSTGRES_CUSTOM_PASSWORDS="${PGPOOL_POSTGRES_CUSTOM_PASSWORDS:-}"
 export PGPOOL_ENABLE_LDAP="${PGPOOL_ENABLE_LDAP:-no}"
 export PGPOOL_AUTHENTICATION_METHOD="${PGPOOL_AUTHENTICATION_METHOD:-scram-sha-256}"
-export PGPOOL_AES_KEY="${PGPOOL_AES_KEY:-head -c 20 /dev/urandom | base64}"
+export PGPOOL_AES_KEY="${PGPOOL_AES_KEY:-$(head -c 20 /dev/urandom | base64)}"
 
 # TLS settings
 export PGPOOL_ENABLE_TLS="${PGPOOL_ENABLE_TLS:-no}"
