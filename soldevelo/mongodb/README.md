@@ -13,7 +13,7 @@ docker run --name mongodb docker.io/soldevelo/mongodb:latest
 Using Docker Compose:
 
 ```console
-curl -sSL https://raw.githubusercontent.com/soldevelo/containers/main/soldevelo/mongodb/8.2/debian-12/docker-compose.yml > docker-compose.yml
+curl -sSL https://raw.githubusercontent.com/soldevelo/containers/main/soldevelo/mongodb/8.3/debian-12/docker-compose.yml > docker-compose.yml
 docker compose up -d
 ```
 
@@ -31,7 +31,7 @@ Or build it yourself:
 
 ```console
 git clone https://github.com/soldevelo/containers.git
-cd containers/soldevelo/mongodb/8.2/debian-12
+cd containers/soldevelo/mongodb/8.3/debian-12
 docker build -t soldevelo/mongodb:latest .
 ```
 
@@ -42,7 +42,7 @@ This image runs as a non-root user (UID `1001`), following the same security mod
 ## Using docker-compose
 
 ```console
-curl -sSL https://raw.githubusercontent.com/soldevelo/containers/main/soldevelo/mongodb/8.2/debian-12/docker-compose.yml > docker-compose.yml
+curl -sSL https://raw.githubusercontent.com/soldevelo/containers/main/soldevelo/mongodb/8.3/debian-12/docker-compose.yml > docker-compose.yml
 docker compose up -d
 ```
 

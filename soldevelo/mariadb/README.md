@@ -13,7 +13,7 @@ docker run --name mariadb -e ALLOW_EMPTY_PASSWORD=yes docker.io/soldevelo/mariad
 Using Docker Compose:
 
 ```console
-curl -sSL https://raw.githubusercontent.com/soldevelo/containers/main/soldevelo/mariadb/12.2/debian-12/docker-compose.yml > docker-compose.yml
+curl -sSL https://raw.githubusercontent.com/soldevelo/containers/main/soldevelo/mariadb/12.3/debian-12/docker-compose.yml > docker-compose.yml
 docker compose up -d
 ```
 
@@ -31,7 +31,7 @@ Or build it yourself:
 
 ```console
 git clone https://github.com/soldevelo/containers.git
-cd containers/soldevelo/mariadb/12.2/debian-12
+cd containers/soldevelo/mariadb/12.3/debian-12
 docker build -t soldevelo/mariadb:latest .
 ```
 
@@ -42,7 +42,7 @@ This image runs as a non-root user (UID `1001`), following the same security mod
 ## Using docker-compose
 
 ```console
-curl -sSL https://raw.githubusercontent.com/soldevelo/containers/main/soldevelo/mariadb/12.2/debian-12/docker-compose.yml > docker-compose.yml
+curl -sSL https://raw.githubusercontent.com/soldevelo/containers/main/soldevelo/mariadb/12.3/debian-12/docker-compose.yml > docker-compose.yml
 docker compose up -d
 ```
 
