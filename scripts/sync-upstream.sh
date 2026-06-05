@@ -46,15 +46,24 @@ with open(our_path) as f:
 with open(upstream_path) as f:
     upstream_lines = f.readlines()
 
-# --- Extract our header (leading # comment block)
-our_header = []
-for line in our_lines:
-    if line.startswith("#"):
-        our_header.append(line)
-    elif line.strip() == "" and not our_header:
-        continue
-    else:
-        break
+# --- Extract our copyright header (shebang + comment lines through SPDX)
+def extract_header(lines):
+    result = []
+    for line in lines:
+        result.append(line)
+        if line.startswith("# SPDX-License-Identifier:"):
+            return result
+    # fallback: no SPDX found - use all leading # lines
+    result = []
+    for line in lines:
+        if line.startswith("#"):
+            result.append(line)
+        elif line.strip() == "" and not result:
+            continue
+        else:
+            break
+    return result
+our_header = extract_header(our_lines)
 while our_header and our_header[-1].strip() == "":
     our_header.pop()
 our_header.append("\n")
@@ -71,14 +80,21 @@ if file_type == "dockerfile":
     preserve = {k: get_label(our_lines, k)
                 for k in ("description", "documentation", "source", "vendor")}
 
-# --- Skip upstream header block
+# --- Skip upstream copyright header (through SPDX line)
 start = 0
 for i, line in enumerate(upstream_lines):
-    if line.strip() and not line.startswith("#"):
-        start = i
+    if line.startswith("# SPDX-License-Identifier:"):
+        start = i + 1
         break
-
-# --- Write: our header + upstream body with patched labels
+if start == 0:
+    # fallback: skip all leading # lines
+    for i, line in enumerate(upstream_lines):
+        if line.strip() and not line.startswith("#"):
+            start = i
+            break
+# skip blank lines immediately after the header so our appended \n is the only separator
+while start < len(upstream_lines) and upstream_lines[start].strip() == "":
+    start += 1
 sys.stdout.writelines(our_header)
 for line in upstream_lines[start:]:
     for key, val in preserve.items():
@@ -101,8 +117,15 @@ import sys
 with open(sys.argv[1]) as f:
     lines = f.readlines()
 i = 0
-while i < len(lines) and (lines[i].startswith("#") or lines[i].strip() == ""):
-    i += 1
+for i, line in enumerate(lines):
+    if line.startswith("# SPDX-License-Identifier:"):
+        i += 1
+        break
+else:
+    # fallback: skip all leading # and blank lines
+    i = 0
+    while i < len(lines) and (lines[i].startswith("#") or lines[i].strip() == ""):
+        i += 1
 sys.stdout.writelines(lines[i:])
 '
 
@@ -140,10 +163,16 @@ EXTRACT_HEADER_PY='
 import sys
 with open(sys.argv[1]) as f:
     lines = f.readlines()
-i = 0
-while i < len(lines) and (lines[i].startswith("#") or lines[i].strip() == ""):
-    i += 1
-header = lines[:i]
+end = 0
+for i, line in enumerate(lines):
+    if line.startswith("# SPDX-License-Identifier:"):
+        end = i + 1
+        break
+if end == 0:
+    # fallback: all leading # and blank lines
+    while end < len(lines) and (lines[end].startswith("#") or lines[end].strip() == ""):
+        end += 1
+header = lines[:end]
 while header and header[-1].strip() == "":
     header.pop()
 header.append("\n")
@@ -374,13 +403,22 @@ our_header = []
 if local_path:
     try:
         with open(local_path) as f:
+            our_header = []
             for line in f:
-                if line.startswith("#"):
-                    our_header.append(line)
-                elif line.strip() == "" and not our_header:
-                    continue
-                else:
+                our_header.append(line)
+                if line.startswith("# SPDX-License-Identifier:"):
                     break
+            else:
+                # fallback: no SPDX - use all leading # lines
+                our_header2 = []
+                for line in our_header:
+                    if line.startswith("#"):
+                        our_header2.append(line)
+                    elif line.strip() == "" and not our_header2:
+                        continue
+                    else:
+                        break
+                our_header = our_header2
         while our_header and our_header[-1].strip() == "":
             our_header.pop()
         if our_header:
@@ -388,12 +426,21 @@ if local_path:
     except OSError:
         pass
 
-# --- Skip upstream leading comment block
+# --- Skip upstream copyright header (through SPDX line)
 start = 0
 for i, line in enumerate(upstream_lines):
-    if line.strip() and not line.startswith("#"):
-        start = i
+    if line.startswith("# SPDX-License-Identifier:"):
+        start = i + 1
         break
+if start == 0:
+    # fallback: skip all leading # lines
+    for i, line in enumerate(upstream_lines):
+        if line.strip() and not line.startswith("#"):
+            start = i
+            break
+# skip blank lines immediately after the header so our appended \n is the only separator
+while start < len(upstream_lines) and upstream_lines[start].strip() == "":
+    start += 1
 
 upstream_body = "".join(upstream_lines[start:])
 
