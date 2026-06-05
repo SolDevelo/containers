@@ -355,6 +355,30 @@ with open(tags_path, "w") as f:
 '
 
 # ---------------------------------------------------------------------------
+# Python helper: sync docker-compose.yml from upstream, replacing
+# bitnami/{image_name} with soldevelo/{image_name} in image: fields.
+# Takes (upstream_path, image_name) and writes result to stdout.
+# ---------------------------------------------------------------------------
+PATCH_COMPOSE_IMAGE_PY='
+import sys, re
+
+upstream_path, image_name = sys.argv[1], sys.argv[2]
+
+with open(upstream_path) as f:
+    content = f.read()
+
+# Replace bitnami/{image_name} with soldevelo/{image_name} in image: fields.
+# Uses \x27 for single-quote so the literal can live inside a bash single-quoted string.
+content = re.sub(
+    r"(image:\s*[\x27\"]?)bitnami/(" + re.escape(image_name) + r")",
+    r"\1soldevelo/\2",
+    content,
+)
+
+sys.stdout.write(content)
+'
+
+# ---------------------------------------------------------------------------
 # Auto-discover: find all soldevelo/<image>/<version>/<os> dirs with Dockerfiles.
 # The upstream path is obtained by replacing the 'soldevelo/' prefix with 'bitnami/'.
 # ---------------------------------------------------------------------------
@@ -844,6 +868,26 @@ for local_dir in "${CHANGED[@]}"; do
 
   # -- all subdirectories (file-by-file, preserving our functional changes) ---
   sync_all_subdirs "$upstream_dir" "$local_dir"
+
+  # -- docker-compose.yml: sync from upstream, always preserve soldevelo image ref ---
+  local_image_name=$(echo "$local_dir" | cut -d/ -f2)
+  if git rev-parse "remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/docker-compose.yml" &>/dev/null; then
+    echo "   Processing docker-compose.yml..."
+    upstream_compose=$(mktemp)
+    git show "remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/docker-compose.yml" > "$upstream_compose"
+    patched_compose=$(mktemp)
+    python3 -c "$PATCH_COMPOSE_IMAGE_PY" "$upstream_compose" "$local_image_name" > "$patched_compose"
+    if [[ ! -f "${local_dir}/docker-compose.yml" ]]; then
+      cp "$patched_compose" "${local_dir}/docker-compose.yml"
+      git add "${local_dir}/docker-compose.yml"
+      echo "     + added: docker-compose.yml (soldevelo image ref applied)"
+    elif ! diff -q "$patched_compose" "${local_dir}/docker-compose.yml" >/dev/null 2>&1; then
+      cp "$patched_compose" "${local_dir}/docker-compose.yml"
+      git add "${local_dir}/docker-compose.yml"
+      echo "     ~ updated: docker-compose.yml (upstream changes + soldevelo image ref preserved)"
+    fi
+    rm -f "$upstream_compose" "$patched_compose"
+  fi
 
   # If nothing changed for this image after merge steps, skip tags-info update.
   if git diff --quiet -- "$local_dir" && git diff --cached --quiet -- "$local_dir"; then
