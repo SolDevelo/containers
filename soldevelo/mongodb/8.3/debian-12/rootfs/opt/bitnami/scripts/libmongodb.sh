@@ -4,10 +4,6 @@
 #
 # Bitnami MongoDB library
 
-# shellcheck disable=SC1090,SC1091
-
-# Load Generic Libraries
-
 . /opt/bitnami/scripts/libfile.sh
 . /opt/bitnami/scripts/liblog.sh
 . /opt/bitnami/scripts/libservice.sh
