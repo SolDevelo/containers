@@ -2,6 +2,7 @@
 # Based on Bitnami PostgreSQL HA © Broadcom, Inc. (Apache-2.0)
 # SPDX-License-Identifier: Apache-2.0
 
+
 services:
   pg-0:
     image: docker.io/soldevelo/postgresql-repmgr:18

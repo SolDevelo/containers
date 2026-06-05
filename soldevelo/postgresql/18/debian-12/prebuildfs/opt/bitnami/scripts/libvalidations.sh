@@ -1,6 +1,7 @@
 #!/bin/bash
 # Copyright Broadcom, Inc. All Rights Reserved.
 # SPDX-License-Identifier: APACHE-2.0
+
 #
 # Validation functions library
 
@@ -20,7 +21,7 @@
 #########################
 is_int() {
     local -r int="${1:?missing value}"
-    if [[ "$int" =~ ^-?[0-9]+ ]]; then
+    if [[ "$int" =~ ^-?[0-9]+$ ]]; then
         true
     else
         false

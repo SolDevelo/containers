@@ -2,6 +2,7 @@
 # Based on Bitnami MongoDB © Broadcom, Inc. (Apache-2.0)
 # SPDX-License-Identifier: Apache-2.0
 
+
 services:
   mongodb:
     image: docker.io/soldevelo/mongodb:8.3
