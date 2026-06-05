@@ -355,6 +355,62 @@ with open(tags_path, "w") as f:
 '
 
 # ---------------------------------------------------------------------------
+# Python helper: sync docker-compose.yml from upstream, replacing
+# bitnami/{image_name} with soldevelo/{image_name} in image: fields.
+# Takes (upstream_path, image_name) and writes result to stdout.
+# ---------------------------------------------------------------------------
+PATCH_COMPOSE_IMAGE_PY='
+import sys, re
+
+upstream_path, image_name = sys.argv[1], sys.argv[2]
+local_path = sys.argv[3] if len(sys.argv) > 3 else None
+
+with open(upstream_path) as f:
+    upstream_lines = f.readlines()
+
+# --- If a local file exists, transplant its leading comment header (same
+#     logic as MERGE_FILE_PY) so we never overwrite the SolDevelo copyright.
+our_header = []
+if local_path:
+    try:
+        with open(local_path) as f:
+            for line in f:
+                if line.startswith("#"):
+                    our_header.append(line)
+                elif line.strip() == "" and not our_header:
+                    continue
+                else:
+                    break
+        while our_header and our_header[-1].strip() == "":
+            our_header.pop()
+        if our_header:
+            our_header.append("\n")
+    except OSError:
+        pass
+
+# --- Skip upstream leading comment block
+start = 0
+for i, line in enumerate(upstream_lines):
+    if line.strip() and not line.startswith("#"):
+        start = i
+        break
+
+upstream_body = "".join(upstream_lines[start:])
+
+# Replace bitnami/{image_name} with soldevelo/{image_name} in image: fields.
+# Handles optional docker.io/ registry prefix.
+# Uses \x27 for single-quote so the literal can live inside a bash single-quoted string.
+upstream_body = re.sub(
+    r"(image:\s*[\x27\"]?(?:docker\.io/)?)bitnami/(" + re.escape(image_name) + r")",
+    r"\1soldevelo/\2",
+    upstream_body,
+)
+
+sys.stdout.writelines(our_header)
+sys.stdout.write(upstream_body)
+'
+
+# ---------------------------------------------------------------------------
 # Auto-discover: find all soldevelo/<image>/<version>/<os> dirs with Dockerfiles.
 # The upstream path is obtained by replacing the 'soldevelo/' prefix with 'bitnami/'.
 # ---------------------------------------------------------------------------
@@ -844,6 +900,26 @@ for local_dir in "${CHANGED[@]}"; do
 
   # -- all subdirectories (file-by-file, preserving our functional changes) ---
   sync_all_subdirs "$upstream_dir" "$local_dir"
+
+  # -- docker-compose.yml: sync from upstream, always preserve soldevelo image ref ---
+  local_image_name=$(echo "$local_dir" | cut -d/ -f2)
+  if git rev-parse "remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/docker-compose.yml" &>/dev/null; then
+    echo "   Processing docker-compose.yml..."
+    upstream_compose=$(mktemp)
+    git show "remotes/${BITNAMI_REMOTE}/main:${upstream_dir}/docker-compose.yml" > "$upstream_compose"
+    patched_compose=$(mktemp)
+    python3 -c "$PATCH_COMPOSE_IMAGE_PY" "$upstream_compose" "$local_image_name" "${local_dir}/docker-compose.yml" > "$patched_compose"
+    if [[ ! -f "${local_dir}/docker-compose.yml" ]]; then
+      cp "$patched_compose" "${local_dir}/docker-compose.yml"
+      git add "${local_dir}/docker-compose.yml"
+      echo "     + added: docker-compose.yml (soldevelo image ref applied)"
+    elif ! diff -q "$patched_compose" "${local_dir}/docker-compose.yml" >/dev/null 2>&1; then
+      cp "$patched_compose" "${local_dir}/docker-compose.yml"
+      git add "${local_dir}/docker-compose.yml"
+      echo "     ~ updated: docker-compose.yml (upstream changes + soldevelo image ref preserved)"
+    fi
+    rm -f "$upstream_compose" "$patched_compose"
+  fi
 
   # If nothing changed for this image after merge steps, skip tags-info update.
   if git diff --quiet -- "$local_dir" && git diff --cached --quiet -- "$local_dir"; then
