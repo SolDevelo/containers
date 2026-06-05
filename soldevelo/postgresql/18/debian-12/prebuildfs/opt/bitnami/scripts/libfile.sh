@@ -4,10 +4,6 @@
 #
 # Library for managing files
 
-# shellcheck disable=SC1091
-
-# Load Generic Libraries
-
 . /opt/bitnami/scripts/libos.sh
 
 # Functions

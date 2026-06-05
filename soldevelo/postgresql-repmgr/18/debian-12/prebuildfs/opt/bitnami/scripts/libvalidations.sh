@@ -7,6 +7,7 @@
 # shellcheck disable=SC1091,SC2086
 
 # Load Generic Libraries
+
 . /opt/bitnami/scripts/liblog.sh
 
 # Functions
@@ -20,7 +21,7 @@
 #########################
 is_int() {
     local -r int="${1:?missing value}"
-    if [[ "$int" =~ ^-?[0-9]+ ]]; then
+    if [[ "$int" =~ ^-?[0-9]+$ ]]; then
         true
     else
         false

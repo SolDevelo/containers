@@ -4,10 +4,6 @@
 #
 # Bitnami Postgresql Repmgr library
 
-# shellcheck disable=SC1091
-
-# Load Generic Libraries
-
 . /opt/bitnami/scripts/libfile.sh
 . /opt/bitnami/scripts/libfs.sh
 . /opt/bitnami/scripts/liblog.sh
