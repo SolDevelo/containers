@@ -2,6 +2,7 @@
 # Copyright 2026 SolDevelo
 # Based on Bitnami container scripts © Broadcom, Inc. (Apache-2.0)
 # SPDX-License-Identifier: Apache-2.0
+
 #
 # Bitnami custom library
 
