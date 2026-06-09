@@ -514,6 +514,20 @@ prev_upstream_sha_for_path() {
 }
 
 # ---------------------------------------------------------------------------
+# Helper: copy the execute bit from $upstream_file to $target_file.
+# git archive preserves the mode from the tree object, so $upstream_file
+# already has the correct 755/644 mode after tar extraction.
+# ---------------------------------------------------------------------------
+sync_mode() {
+  local upstream_file="$1" target_file="$2"
+  if [[ -x "$upstream_file" ]]; then
+    chmod +x "$target_file"
+  else
+    chmod -x "$target_file"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Helper: sync a subdirectory from upstream, file-by-file.
 #   - New file from upstream  - add it
 #   - Header-only diff        - apply header-merge (keep our header, take upstream body)
@@ -585,6 +599,7 @@ sync_subdir() {
         continue
       fi
       mv "${our_file}.merged" "$our_file"
+      sync_mode "$upstream_file" "$our_file"
       git add "$our_file"
       echo "     ~ header-merged: $rel"
     else
@@ -658,6 +673,7 @@ sync_subdir() {
           fi
 
           mv "${our_file}.merged" "$our_file"
+          sync_mode "$upstream_file" "$our_file"
           git add "$our_file"
           echo "     ~ auto-merged (3-way): $rel"
         else
@@ -669,6 +685,7 @@ sync_subdir() {
             if python3 -c "$MERGE_FILE_PY" "$our_file" "$upstream_file" "script" > "$result_tmp" 2>/dev/null \
               && python3 -c "$PATCH_WELCOME_FUNCTION_PY" "$our_file" "$result_tmp" > "${result_tmp}.patched" 2>/dev/null; then
               mv "${result_tmp}.patched" "$our_file"
+              sync_mode "$upstream_file" "$our_file"
               git add "$our_file"
               echo "     ~ conflict fallback merged upstream and preserved welcome function: $rel"
             else
@@ -706,6 +723,7 @@ sync_subdir() {
           if python3 -c "$MERGE_FILE_PY" "$our_file" "$upstream_file" "script" > "$result_tmp" 2>/dev/null \
             && python3 -c "$PATCH_WELCOME_FUNCTION_PY" "$our_file" "$result_tmp" > "${result_tmp}.patched" 2>/dev/null; then
             mv "${result_tmp}.patched" "$our_file"
+            sync_mode "$upstream_file" "$our_file"
             git add "$our_file"
             if [[ "$should_review" -eq 1 ]]; then
               echo "     ~ no ancestor fallback merged upstream and preserved welcome function: $rel"
