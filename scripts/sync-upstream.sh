@@ -17,6 +17,7 @@
 #       header-only diff       - header kept, upstream content applied
 #       functional diff        - 3-way merge attempted; kept ours only on conflict
 #       our file not upstream  - kept as-is (our intentional addition)
+#       stale .sha256 in checksums/ - removed (checksums are fully upstream-owned)
 #   tags-info.yaml             - patch version updated; revision reset to 0
 
 set -euo pipefail
@@ -751,7 +752,19 @@ sync_subdir() {
     fi
   done < <(find "$tmpd" -type f | sort)
 
-  # Files we have locally that don't exist upstream are kept as-is (intentional additions)
+  # Files we have locally that don't exist upstream are kept as-is (intentional additions),
+  # EXCEPT for the checksums directory: those are fully upstream-owned (no local additions).
+  # Remove any .sha256 files we have that are not in the current upstream tree.
+  local cs_dir="${local_dir}/${subdir}/opt/bitnami/checksums"
+  if [[ -d "$cs_dir" ]]; then
+    while IFS= read -r local_sha; do
+      local sha_rel="${local_sha#${local_dir}/${subdir}/}"
+      if [[ ! -f "${tmpd}/${sha_rel}" ]]; then
+        git rm -f "$local_sha" 2>/dev/null || true
+        echo "     - removed stale checksum: ${sha_rel}"
+      fi
+    done < <(find "$cs_dir" -name '*.sha256' | sort)
+  fi
 
   rm -rf "$tmpd"
   git add "${local_dir}/${subdir}/" 2>/dev/null || true
