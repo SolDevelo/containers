@@ -4,7 +4,7 @@
 
 FROM docker.io/bitnami/minideb:bookworm AS builder
 
-ARG DOWNLOADS_URL="downloads.bitnami.com/files/stacksmith"
+ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 ENV OS_ARCH="${TARGETARCH:-amd64}"
@@ -18,11 +18,11 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     DOWNLOADS_URL=${SECRET_DOWNLOADS_URL:-${DOWNLOADS_URL}} ; \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
-      "prometheus-3.12.0-1-linux-${OS_ARCH}-debian-12" \
+      "prometheus-3.12.0-2-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
-        curl -SsLf "https://${DOWNLOADS_URL}/${COMPONENT}.tar.gz" -O ; \
+        curl -SsLf "${DOWNLOADS_URL}/${COMPONENT}.tar.gz" -O ; \
       fi ; \
       sha256sum -c "/opt/bitnami/checksums/${COMPONENT}.tar.gz.sha256" ; \
       tar -zxf "${COMPONENT}.tar.gz" -C /opt/bitnami --strip-components=2 --no-same-owner ; \
@@ -36,13 +36,13 @@ RUN uninstall_packages curl
 
 FROM scratch
 
-ARG DOWNLOADS_URL="downloads.bitnami.com/files/stacksmith"
+ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 ENV OS_ARCH="${TARGETARCH:-amd64}"
 
 LABEL org.opencontainers.image.base.name="scratch" \
-      org.opencontainers.image.created="2026-06-03T05:21:51Z" \
+      org.opencontainers.image.created="2026-06-10T23:01:39Z" \
       org.opencontainers.image.description="Prometheus container image packaged by SolDevelo, based on Bitnami\'s work" \
       org.opencontainers.image.title="prometheus" \
       org.opencontainers.image.vendor="SolDevelo" \
@@ -58,7 +58,7 @@ COPY --from=builder /opt/bitnami/prometheus/licenses /opt/bitnami/prometheus/lic
 
 ENV APP_VERSION="3.12.0" \
     BITNAMI_APP_NAME="prometheus" \
-    IMAGE_REVISION="1" \
+    IMAGE_REVISION="2" \
     PATH="/opt/bitnami/prometheus/bin:$PATH"
 
 EXPOSE 9090
