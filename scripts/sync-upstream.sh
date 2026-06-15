@@ -754,12 +754,14 @@ sync_subdir() {
 
   # Files we have locally that don't exist upstream are kept as-is (intentional additions),
   # EXCEPT for the checksums directory: those are fully upstream-owned (no local additions).
-  # Remove any .sha256 files we have that are not in the current upstream tree.
+  # Remove any .sha256 files we have that are not in the upstream snapshot (tmpd).
+  # NOTE: tmpd stores files as "${subdir}/opt/bitnami/checksums/..." so sha_rel must be
+  # looked up as "${tmpd}/${subdir}/${sha_rel}" (subdir = e.g. "prebuildfs").
   local cs_dir="${local_dir}/${subdir}/opt/bitnami/checksums"
   if [[ -d "$cs_dir" ]]; then
     while IFS= read -r local_sha; do
       local sha_rel="${local_sha#${local_dir}/${subdir}/}"
-      if [[ ! -f "${tmpd}/${sha_rel}" ]]; then
+      if [[ ! -f "${tmpd}/${subdir}/${sha_rel}" ]]; then
         git rm -f "$local_sha" 2>/dev/null || true
         echo "     - removed stale checksum: ${sha_rel}"
       fi
