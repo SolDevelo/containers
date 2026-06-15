@@ -1,0 +1,80 @@
+name: Check for New Upstream Versions
+
+on:
+  schedule:
+    # Every day at 12 PM UTC
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+    inputs:
+      no_major_check:
+        description: 'Skip new major version detection'
+        type: boolean
+        default: false
+      no_patch_check:
+        description: 'Skip patch/minor version detection'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Dry run - print findings, do not post to Slack'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout containers repo
+        uses: actions/checkout@v6
+        with:
+          path: containers
+
+      - name: Checkout bitnami/containers
+        uses: actions/checkout@v6
+        with:
+          repository: bitnami/containers
+          path: containers-bitnami
+          # Shallow clone — we only need the working tree, not full history
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build flags
+        id: flags
+        run: |
+          FLAGS=""
+          if [[ "${{ inputs.no_major_check }}" == "true" ]]; then
+            FLAGS="$FLAGS --no-major-check"
+          fi
+          if [[ "${{ inputs.no_patch_check }}" == "true" ]]; then
+            FLAGS="$FLAGS --no-patch-check"
+          fi
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            FLAGS="$FLAGS --dry-run"
+          fi
+          echo "flags=$FLAGS" >> "$GITHUB_OUTPUT"
+
+      - name: Check for new versions
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          python3 containers/scripts/check-new-versions.py \
+            --containers-dir containers \
+            --bitnami-dir     containers-bitnami/bitnami \
+            ${{ steps.flags.outputs.flags }}
+        # Exit 1 means "new versions found and notification sent" — not a workflow failure.
+        # Exit 2 means a real error. We flip the semantics here using continue-on-error
+        # and a follow-up step so CI stays green for expected "updates found" exits.
+        continue-on-error: true
+        id: check
+
+      - name: Fail on script error
+        if: steps.check.outcome == 'failure' && steps.check.conclusion == 'failure'
+        run: |
+          echo "check-new-versions.py exited with an unexpected error (exit code 2)."
+          exit 1
