@@ -9,13 +9,13 @@ ARG JAVA_EXTRA_SECURITY_DIR="/bitnami/java/extra-security"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-06-10T17:05:30Z" \
+      org.opencontainers.image.created="2026-06-25T17:47:11Z" \
       org.opencontainers.image.description="Apache Kafka container image packaged by SolDevelo, based on Bitnami\'s work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/kafka/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/kafka" \
       org.opencontainers.image.title="kafka" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="4.3.0"
+      org.opencontainers.image.version="4.3.1"
 
 ENV HOME="/" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -31,7 +31,7 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
       "jre-17.0.19-11-1-linux-${OS_ARCH}-debian-12" \
-      "kafka-4.3.0-2-linux-${OS_ARCH}-debian-12" \
+      "kafka-4.3.1-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -53,9 +53,9 @@ COPY rootfs /
 RUN chmod +x /etc/kafka/docker/run
 RUN /opt/bitnami/scripts/java/postunpack.sh
 RUN /opt/bitnami/scripts/kafka/postunpack.sh
-ENV APP_VERSION="4.3.0" \
+ENV APP_VERSION="4.3.1" \
     BITNAMI_APP_NAME="kafka" \
-    IMAGE_REVISION="3" \
+    IMAGE_REVISION="0" \
     JAVA_HOME="/opt/bitnami/java" \
     PATH="/opt/bitnami/java/bin:/opt/bitnami/kafka/bin:$PATH"
 
