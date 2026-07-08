@@ -8,14 +8,14 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-06-29T20:01:45Z" \
+      org.opencontainers.image.created="2026-07-08T05:17:52Z" \
       org.opencontainers.image.description="PostgreSQL Exporter container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/postgres-exporter/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/postgres-exporter" \
       org.opencontainers.image.title="postgres-exporter" \
       org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/postgres-exporter" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="0.20.0"
+      org.opencontainers.image.version="0.20.1"
 
 ENV HOME="/" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -30,7 +30,7 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     DOWNLOADS_URL=${SECRET_DOWNLOADS_URL:-${DOWNLOADS_URL}} ; \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
-      "postgres-exporter-0.20.0-0-linux-${OS_ARCH}-debian-12" \
+      "postgres-exporter-0.20.1-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -47,7 +47,7 @@ RUN chmod g+rwX /opt/bitnami
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
 RUN uninstall_packages curl
 
-ENV APP_VERSION="0.20.0" \
+ENV APP_VERSION="0.20.1" \
     BITNAMI_APP_NAME="postgres-exporter" \
     IMAGE_REVISION="0" \
     PATH="/opt/bitnami/postgres-exporter/bin:$PATH"
