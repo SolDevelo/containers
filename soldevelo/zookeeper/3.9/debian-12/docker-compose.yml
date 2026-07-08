@@ -1,0 +1,17 @@
+# Copyright 2026 SolDevelo
+# Based on Bitnami ZooKeeper © Broadcom, Inc. (Apache-2.0)
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  zookeeper:
+    image: docker.io/soldevelo/zookeeper:3.9
+    ports:
+      - '2181:2181'
+    volumes:
+      - 'zookeeper_data:/bitnami/zookeeper'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+
+volumes:
+  zookeeper_data:
+    driver: local
