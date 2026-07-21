@@ -8,13 +8,13 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-07-17T11:16:18Z" \
+      org.opencontainers.image.created="2026-07-20T15:46:47Z" \
       org.opencontainers.image.description="RabbitMQ container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/rabbitmq/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/rabbitmq" \
       org.opencontainers.image.title="rabbitmq" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="4.3.2"
+      org.opencontainers.image.version="4.3.3"
 
 ENV HOME="/opt/bitnami/rabbitmq/.rabbitmq" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -31,7 +31,7 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
       "erlang-27.3.4-3-linux-${OS_ARCH}-debian-12" \
-      "rabbitmq-4.3.2-1-linux-${OS_ARCH}-debian-12" \
+      "rabbitmq-4.3.3-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -53,9 +53,9 @@ RUN /opt/bitnami/scripts/locales/generate-locales.sh
 
 COPY rootfs /
 RUN /opt/bitnami/scripts/rabbitmq/postunpack.sh
-ENV APP_VERSION="4.3.2" \
+ENV APP_VERSION="4.3.3" \
     BITNAMI_APP_NAME="rabbitmq" \
-    IMAGE_REVISION="2" \
+    IMAGE_REVISION="0" \
     LANG="en_US.UTF-8" \
     LANGUAGE="en_US:en"
 
