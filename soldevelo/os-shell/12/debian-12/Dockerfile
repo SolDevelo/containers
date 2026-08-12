@@ -8,7 +8,7 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-07-12T14:11:13Z" \
+      org.opencontainers.image.created="2026-08-11T14:31:39Z" \
       org.opencontainers.image.description="Application packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/os-shell/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/os-shell" \
@@ -30,10 +30,10 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
       "yq-4.53.3-2-linux-${OS_ARCH}-debian-12" \
-      "wait-for-port-1.0.10-14-linux-${OS_ARCH}-debian-12" \
-      "render-template-1.0.9-168-linux-${OS_ARCH}-debian-12" \
-      "ini-file-1.4.9-13-linux-${OS_ARCH}-debian-12" \
-      "scuttle-1.1.15-5-linux-${OS_ARCH}-debian-12" \
+      "wait-for-port-1.0.11-0-linux-${OS_ARCH}-debian-12" \
+      "render-template-1.0.10-0-linux-${OS_ARCH}-debian-12" \
+      "ini-file-1.4.10-0-linux-${OS_ARCH}-debian-12" \
+      "scuttle-1.1.16-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -51,7 +51,7 @@ RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
 
 ENV APP_VERSION="12" \
     BITNAMI_APP_NAME="os-shell" \
-    IMAGE_REVISION="70" \
+    IMAGE_REVISION="71" \
     PATH="/opt/bitnami/common/bin:$PATH"
 
 USER 1001
