@@ -8,14 +8,14 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-08-07T15:12:55Z" \
+      org.opencontainers.image.created="2026-08-17T19:33:32Z" \
       org.opencontainers.image.description="Redis container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/redis/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/redis" \
       org.opencontainers.image.title="redis" \
       org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/redis" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="8.10.0"
+      org.opencontainers.image.version="8.10.1"
 
 ENV HOME="/" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -30,8 +30,8 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     DOWNLOADS_URL=${SECRET_DOWNLOADS_URL:-${DOWNLOADS_URL}} ; \
     mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ || exit 1 ; \
     COMPONENTS=( \
-      "wait-for-port-1.0.11-0-linux-${OS_ARCH}-debian-12" \
-      "redis-8.10.0-0-linux-${OS_ARCH}-debian-12" \
+      "wait-for-port-1.0.11-1-linux-${OS_ARCH}-debian-12" \
+      "redis-8.10.1-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -52,9 +52,9 @@ RUN uninstall_packages curl
 
 COPY rootfs /
 RUN /opt/bitnami/scripts/redis/postunpack.sh
-ENV APP_VERSION="8.10.0" \
+ENV APP_VERSION="8.10.1" \
     BITNAMI_APP_NAME="redis" \
-    IMAGE_REVISION="1" \
+    IMAGE_REVISION="0" \
     PATH="/opt/bitnami/common/bin:/opt/bitnami/redis/bin:$PATH"
 
 EXPOSE 6379
