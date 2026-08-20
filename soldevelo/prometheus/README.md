@@ -20,7 +20,7 @@ Or build it yourself:
 
 ```console
 git clone https://github.com/soldevelo/containers.git
-cd containers/soldevelo/prometheus/3.12/debian-12
+cd containers/soldevelo/prometheus/3.14/debian-12
 docker build -t soldevelo/prometheus:latest .
 ```
 
