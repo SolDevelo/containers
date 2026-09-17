@@ -8,14 +8,14 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-09-06T21:43:32Z" \
+      org.opencontainers.image.created="2026-09-15T22:10:17Z" \
       org.opencontainers.image.description="ZooKeeper container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/zookeeper/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/zookeeper" \
       org.opencontainers.image.title="zookeeper" \
       org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/zookeeper" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="3.9.5"
+      org.opencontainers.image.version="3.9.6"
 
 ENV HOME="/" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -33,7 +33,7 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     COMPONENTS=( \
       "wait-for-port-1.0.11-3-linux-${OS_ARCH}-debian-12" \
       "jre-11.0.32-11-0-linux-${OS_ARCH}-debian-12" \
-      "zookeeper-3.9.5-0-linux-${OS_ARCH}-debian-12" \
+      "zookeeper-3.9.6-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -53,9 +53,9 @@ RUN ln -s /opt/bitnami/scripts/zookeeper/run.sh /run.sh
 
 COPY rootfs /
 RUN /opt/bitnami/scripts/zookeeper/postunpack.sh
-ENV APP_VERSION="3.9.5" \
+ENV APP_VERSION="3.9.6" \
     BITNAMI_APP_NAME="zookeeper" \
-    IMAGE_REVISION="15"
+    IMAGE_REVISION="0"
 
 EXPOSE 2181 2888 3888 8080
 
