@@ -7,6 +7,8 @@
 [Overview of Apache ZooKeeper](https://zookeeper.apache.org/)  
 Trademarks: This Docker image is maintained by **SolDevelo** and is based on the [Bitnami ZooKeeper](https://github.com/bitnami/containers/tree/main/bitnami/zookeeper) container. The respective trademarks mentioned (e.g., Apache ZooKeeper) are owned by their respective companies. Use of these trademarks does not imply any affiliation or endorsement by those companies.
 
+Bitnami is a trademark of Broadcom Inc. This image is an independent build maintained by SolDevelo and is not affiliated with, endorsed or certified by Broadcom Inc. References to Bitnami describe where the packaging scripts come from.
+
 ## TL;DR
 
 ```console

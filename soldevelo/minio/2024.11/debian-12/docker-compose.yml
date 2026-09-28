@@ -1,0 +1,16 @@
+# Copyright 2026 SolDevelo
+# Based on Bitnami Object Storage based on MinIO® © Broadcom, Inc. (Apache-2.0)
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  minio:
+    image: docker.io/soldevelo/minio:2024.11
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - 'minio_data:/bitnami/minio/data'
+
+volumes:
+  minio_data:
+    driver: local

@@ -1,11 +1,13 @@
-# Bitnami package for OS Shell + Utility
+# OS Shell + Utility packaged by SolDevelo
 
 ## What is OS Shell + Utility?
 
 > OS Shell + Utility is a general-purpose minimal image, well-suited for helper tasks such as running initialization in initContainers from Helm charts.
 
 [Overview of OS Shell + Utility](https://bitnami.com)
-Trademarks: This software listing is packaged by Bitnami. The respective trademarks mentioned in the offering are owned by the respective companies, and use of them does not imply any affiliation or endorsement.
+Trademarks: This Docker image is maintained by **SolDevelo** and is based on the Bitnami OS Shell + Utility container. The respective trademarks mentioned in the offering are owned by the respective companies, and use of them does not imply any affiliation or endorsement.
+
+Bitnami is a trademark of Broadcom Inc. This image is an independent build maintained by SolDevelo and is not affiliated with, endorsed or certified by Broadcom Inc. References to Bitnami describe where the packaging scripts come from.
 
 ## TL;DR
 

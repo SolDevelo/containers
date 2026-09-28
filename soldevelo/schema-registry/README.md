@@ -5,6 +5,8 @@
 [Overview of Confluent Schema Registry](https://www.confluent.io)
 Trademarks: This Docker image is maintained by **SolDevelo** and is based on the Bitnami Schema Registry container. The respective trademarks mentioned in the offering are owned by the respective companies, and use of them does not imply any affiliation or endorsement.
 
+Bitnami is a trademark of Broadcom Inc. This image is an independent build maintained by SolDevelo and is not affiliated with, endorsed or certified by Broadcom Inc. References to Bitnami describe where the packaging scripts come from.
+
 ## TL;DR
 
 Use this quick command to run the container.

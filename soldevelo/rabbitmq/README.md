@@ -124,3 +124,5 @@ The RabbitMQ container sends logs to stdout/stderr. Use `docker logs` or your lo
 ## License
 
 Apache-2.0. Based on Bitnami RabbitMQ © Broadcom, Inc.
+
+Bitnami is a trademark of Broadcom Inc. This image is an independent build maintained by SolDevelo and is not affiliated with, endorsed or certified by Broadcom Inc. References to Bitnami describe where the packaging scripts come from.

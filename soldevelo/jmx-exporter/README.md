@@ -1,11 +1,13 @@
-# Bitnami package for JMX Exporter
+# JMX Exporter packaged by SolDevelo
 
 ## What is JMX Exporter?
 
 > A process for exposing JMX Beans via HTTP for Prometheus consumption.
 
 [Overview of JMX Exporter](https://github.com/prometheus/jmx_exporter)
-Trademarks: This software listing is packaged by Bitnami. The respective trademarks mentioned in the offering are owned by the respective companies, and use of them does not imply any affiliation or endorsement.
+Trademarks: This Docker image is maintained by **SolDevelo** and is based on the Bitnami JMX Exporter container. The respective trademarks mentioned in the offering are owned by the respective companies, and use of them does not imply any affiliation or endorsement.
+
+Bitnami is a trademark of Broadcom Inc. This image is an independent build maintained by SolDevelo and is not affiliated with, endorsed or certified by Broadcom Inc. References to Bitnami describe where the packaging scripts come from.
 
 ## TL;DR
 
