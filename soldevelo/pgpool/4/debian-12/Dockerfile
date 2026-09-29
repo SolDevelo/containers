@@ -8,13 +8,13 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-09-26T05:04:24Z" \
+      org.opencontainers.image.created="2026-09-29T03:35:11Z" \
       org.opencontainers.image.description="Pgpool-II container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/pgpool/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/pgpool" \
       org.opencontainers.image.title="pgpool" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="4.7.2"
+      org.opencontainers.image.version="4.7.3"
 
 ENV HOME="/" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -31,7 +31,7 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
     COMPONENTS=( \
       "wait-for-port-1.0.11-3-linux-${OS_ARCH}-debian-12" \
       "postgresql-client-18.6.0-0-linux-${OS_ARCH}-debian-12" \
-      "pgpool-4.7.2-0-linux-${OS_ARCH}-debian-12" \
+      "pgpool-4.7.3-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -50,9 +50,9 @@ RUN uninstall_packages curl
 
 COPY rootfs /
 RUN /opt/bitnami/scripts/pgpool/postunpack.sh
-ENV APP_VERSION="4.7.2" \
+ENV APP_VERSION="4.7.3" \
     BITNAMI_APP_NAME="pgpool" \
-    IMAGE_REVISION="5" \
+    IMAGE_REVISION="0" \
     LD_LIBRARY_PATH="/opt/bitnami/common/lib:/opt/bitnami/common/lib64:/opt/bitnami/postgresql/lib" \
     PATH="/opt/bitnami/common/bin:/opt/bitnami/postgresql/bin:/opt/bitnami/pgpool/bin:/opt/bitnami/common/sbin:$PATH"
 
