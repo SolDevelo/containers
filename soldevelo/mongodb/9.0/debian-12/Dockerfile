@@ -13,7 +13,6 @@ LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/mongodb/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/mongodb" \
       org.opencontainers.image.title="mongodb" \
-      org.opencontainers.image.url="https://hub.docker.com/r/soldevelo/mongodb" \
       org.opencontainers.image.vendor="SolDevelo" \
       org.opencontainers.image.version="9.0.2"
 
