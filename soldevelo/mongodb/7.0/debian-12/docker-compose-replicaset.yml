@@ -11,7 +11,7 @@ services:
       - MONGODB_ROOT_PASSWORD=password123
       - MONGODB_REPLICA_SET_KEY=replicasetkey123
     volumes:
-      - 'mongodb_master_data:/soldevelo/mongodb'
+      - 'mongodb_master_data:/bitnami/mongodb'
 
   mongodb-secondary:
     image: docker.io/soldevelo/mongodb:7.0

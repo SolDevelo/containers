@@ -24,7 +24,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     volumes:
-      - kafka_0_data:/soldevelo/kafka
+      - kafka_0_data:/bitnami/kafka
   kafka-1:
     image: docker.io/soldevelo/kafka:3.6
     ports:
@@ -46,7 +46,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     volumes:
-      - kafka_1_data:/soldevelo/kafka
+      - kafka_1_data:/bitnami/kafka
   kafka-2:
     image: docker.io/soldevelo/kafka:3.6
     ports:
@@ -68,7 +68,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     volumes:
-      - kafka_2_data:/soldevelo/kafka
+      - kafka_2_data:/bitnami/kafka
 
 volumes:
   kafka_0_data:

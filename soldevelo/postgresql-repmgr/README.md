@@ -302,10 +302,10 @@ When enabling TLS, PostgreSQL will support both standard and encrypted traffic b
 
     ```console
     $ docker run \
-        -v /path/to/certs:/opt/soldevelo/postgresql/certs \
+        -v /path/to/certs:/opt/bitnami/postgresql/certs \
         -e POSTGRESQL_ENABLE_TLS=yes \
-        -e POSTGRESQL_TLS_CERT_FILE=/opt/soldevelo/postgresql/certs/postgres.crt \
-        -e POSTGRESQL_TLS_KEY_FILE=/opt/soldevelo/postgresql/certs/postgres.key \
+        -e POSTGRESQL_TLS_CERT_FILE=/opt/bitnami/postgresql/certs/postgres.crt \
+        -e POSTGRESQL_TLS_KEY_FILE=/opt/bitnami/postgresql/certs/postgres.key \
         soldevelo/postgresql-repmgr:latest
     ```
 
@@ -318,12 +318,12 @@ When enabling TLS, PostgreSQL will support both standard and encrypted traffic b
         environment:
           ...
           - POSTGRESQL_ENABLE_TLS=yes
-          - POSTGRESQL_TLS_CERT_FILE=/opt/soldevelo/postgresql/certs/postgres.crt
-          - POSTGRESQL_TLS_KEY_FILE=/opt/soldevelo/postgresql/certs/postgres.key
+          - POSTGRESQL_TLS_CERT_FILE=/opt/bitnami/postgresql/certs/postgres.crt
+          - POSTGRESQL_TLS_KEY_FILE=/opt/bitnami/postgresql/certs/postgres.key
         ...
         volumes:
           ...
-          - /path/to/certs:/opt/soldevelo/postgresql/certs
+          - /path/to/certs:/opt/bitnami/postgresql/certs
       ...
     ```
 
@@ -331,7 +331,7 @@ Alternatively, you may also provide this configuration in your [custom](https://
 
 ### Configuration file
 
-The image looks for the `repmgr.conf`, `postgresql.conf` and `pg_hba.conf` files in `/opt/bitnami/repmgr/conf/` and `/opt/soldevelo/postgresql/conf/`. You can mount a volume at `/bitnami/repmgr/conf/` and copy/edit the configuration files in the `/path/to/custom-conf/`. The default configurations will be populated to the `conf/` directories if `/bitnami/repmgr/conf/` is empty.
+The image looks for the `repmgr.conf`, `postgresql.conf` and `pg_hba.conf` files in `/opt/bitnami/repmgr/conf/` and `/opt/bitnami/postgresql/conf/`. You can mount a volume at `/bitnami/repmgr/conf/` and copy/edit the configuration files in the `/path/to/custom-conf/`. The default configurations will be populated to the `conf/` directories if `/bitnami/repmgr/conf/` is empty.
 
 ```console
 /path/to/custom-conf/
@@ -402,7 +402,7 @@ Refer to the [server configuration](http://www.postgresql.org/docs/10/static/run
 
 #### Allow settings to be loaded from files other than the default `postgresql.conf`
 
-Apart of using a custom `repmgr.conf`, `postgresql.conf` or `pg_hba.conf`, you can include files ending in `.conf` from the `conf.d` directory in the volume at `/soldevelo/postgresql/conf/`.
+Apart of using a custom `repmgr.conf`, `postgresql.conf` or `pg_hba.conf`, you can include files ending in `.conf` from the `conf.d` directory in the volume at `/bitnami/postgresql/conf/`.
 For this purpose, the default `postgresql.conf` contains the following section:
 
 ```config
@@ -438,7 +438,7 @@ Run the PostgreSQL image, mounting a directory from your host.
 
 ```console
 docker run --name pg-0 \
-    -v /path/to/extra-custom-conf/:/soldevelo/postgresql/conf/conf.d/ \
+    -v /path/to/extra-custom-conf/:/bitnami/postgresql/conf/conf.d/ \
     -v /path/to/custom-conf/:/bitnami/repmgr/conf/ \
     soldevelo/postgresql-repmgr:latest
 ```
@@ -454,14 +454,14 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - /path/to/extra-custom-conf/:/soldevelo/postgresql/conf/conf.d/
+      - /path/to/extra-custom-conf/:/bitnami/postgresql/conf/conf.d/
       - /path/to/custom-conf/:/bitnami/repmgr/conf/
   pg-1:
     image: soldevelo/postgresql-repmgr:latest
     ports:
       - 5432:5432
     volumes:
-      - /path/to/extra-custom-conf/:/soldevelo/postgresql/conf/conf.d/
+      - /path/to/extra-custom-conf/:/bitnami/postgresql/conf/conf.d/
       - /path/to/custom-conf/:/bitnami/repmgr/conf/
 ```
 
