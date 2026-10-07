@@ -8,7 +8,7 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-10-05T07:19:00Z" \
+      org.opencontainers.image.created="2026-10-06T20:41:30Z" \
       org.opencontainers.image.description="ZooKeeper container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/zookeeper/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/zookeeper" \
@@ -55,7 +55,7 @@ COPY rootfs /
 RUN /opt/bitnami/scripts/zookeeper/postunpack.sh
 ENV APP_VERSION="3.9.6" \
     BITNAMI_APP_NAME="zookeeper" \
-    IMAGE_REVISION="2"
+    IMAGE_REVISION="3"
 
 EXPOSE 2181 2888 3888 8080
 
