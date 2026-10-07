@@ -8,7 +8,7 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-10-05T04:23:26Z" \
+      org.opencontainers.image.created="2026-10-06T16:45:25Z" \
       org.opencontainers.image.description="MongoDB container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/mongodb/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/mongodb" \
@@ -32,7 +32,7 @@ RUN --mount=type=secret,id=downloads_url,env=SECRET_DOWNLOADS_URL \
       "yq-4.54.1-0-linux-${OS_ARCH}-debian-12" \
       "wait-for-port-1.0.11-3-linux-${OS_ARCH}-debian-12" \
       "render-template-1.0.10-4-linux-${OS_ARCH}-debian-12" \
-      "mongodb-shell-2.12.0-0-linux-${OS_ARCH}-debian-12" \
+      "mongodb-shell-2.13.0-0-linux-${OS_ARCH}-debian-12" \
       "mongodb-9.0.2-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
@@ -54,7 +54,7 @@ COPY rootfs /
 RUN /opt/bitnami/scripts/mongodb/postunpack.sh
 ENV APP_VERSION="9.0.2" \
     BITNAMI_APP_NAME="mongodb" \
-    IMAGE_REVISION="1" \
+    IMAGE_REVISION="2" \
     PATH="/opt/bitnami/common/bin:/opt/bitnami/mongodb/bin:$PATH"
 
 EXPOSE 27017
