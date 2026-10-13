@@ -179,10 +179,16 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
 
-  # -- Push each image to Docker Hub (only when confirm_push == 'yes') --
+  # -- Push each image to Docker Hub --
+  # Manual dispatch: only when confirm_push == 'yes'.
+  # Push to main: always, unless repo variable PUBLISH_ON_MERGE is set to 'false'.
   push:
     needs: [detect, build]
-    if: needs.detect.outputs.matrix != '{"include":[]}' && inputs.confirm_push == 'yes'
+    if: >-
+      needs.detect.outputs.matrix != '{"include":[]}' && (
+        (github.event_name == 'workflow_dispatch' && inputs.confirm_push == 'yes') ||
+        (github.event_name == 'push' && vars.PUBLISH_ON_MERGE != 'false')
+      )
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
@@ -289,7 +295,8 @@ jobs:
         if: inputs.flatten != 'false'
         shell: bash
         run: |
-          FLATTEN="${{ inputs.flatten }}"
+          # inputs are empty on push events, so fall back to the dispatch default
+          FLATTEN="${{ inputs.flatten || 'kafka' }}"
           IMAGE_NAME="${{ steps.info.outputs.image_name }}"
 
           should_flatten=false
