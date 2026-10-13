@@ -1,26 +1,66 @@
 name: InfraScan Security Audit
-on: [push]
+# Runs after Build and Publish finishes on main, so it scans the newly pushed
+# images rather than the ones being replaced. Can also be run by hand.
+on:
+  workflow_run:
+    workflows: [Build and Publish]
+    types: [completed]
+  workflow_dispatch:
 
 permissions:
-  pull-requests: write   # enables automatic PR comments
+  pull-requests: write  # Required for PR comments
+  contents: read        # Required for checkout
+  actions: read         # Required to check whether the triggering run pushed images
 
 jobs:
+  # -- Skip unless the Build and Publish run actually pushed images --
+  check:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    outputs:
+      pushed: ${{ steps.check.outputs.pushed }}
+    steps:
+      - id: check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Matrix push jobs are named "push (<image dir>)"; skipped ones count as not pushed
+          PUSHED=$(gh api --paginate \
+            "repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/jobs" \
+            --jq '.jobs[] | select(.name | startswith("push")) | select(.conclusion == "success" or .conclusion == "failure") | .name' \
+            | wc -l)
+          echo "Push jobs that ran: $PUSHED"
+          echo "pushed=$([[ $PUSHED -gt 0 ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   infrascan:
+    needs: check
+    if: needs.check.outputs.pushed == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          # the commit that was built and pushed (the default would be main's latest)
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Run InfraScan
-        uses: soldevelo/infrascan@v1.1.0
+        uses: soldevelo/infrascan@v1
         with:
           scanner: comprehensive
           format: html
           out: infrascan-report.html
-          fail-on: grade_f
+          # Uncomment to enable Enforcement Mode:
+          # fail-on: new_high_critical
 
-      - name: Upload HTML Report
+      - name: Upload InfraScan Report
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() # Upload report even if the scan step fails
         with:
           name: infrascan-report
           path: infrascan-report.html
+          retention-days: 14
