@@ -82,19 +82,19 @@ echo "================================================="
 
 # Start container using docker-compose
 echo "Starting Kafka container with docker-compose..."
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d
 
 # Wait for Kafka to start
 echo "Waiting for Kafka to start..."
 sleep 40
 
 # Get container name from docker-compose
-COMPOSE_CONTAINER=$(docker-compose ps -q kafka)
+COMPOSE_CONTAINER=$(docker compose ps -q kafka)
 if [ -z "$COMPOSE_CONTAINER" ]; then
     echo "ERROR: Could not find container from docker-compose"
-    docker-compose logs
-    docker-compose down -v
+    docker compose logs
+    docker compose down -v
     exit 1
 fi
 
@@ -104,7 +104,7 @@ CONTAINER_NAME=$(docker inspect --format='{{.Name}}' "$COMPOSE_CONTAINER" | sed 
 if ! docker ps | grep -q "${CONTAINER_NAME}"; then
     echo "ERROR: Container failed to start"
     docker logs "${CONTAINER_NAME}" 2>&1 | tail -50
-    docker-compose down -v
+    docker compose down -v
     exit 1
 fi
 
@@ -113,7 +113,7 @@ echo "Checking startup logs..."
 if ! docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Kafka Server started"; then
     echo "ERROR: Kafka did not start successfully"
     docker logs "${CONTAINER_NAME}" 2>&1 | tail -50
-    docker-compose down -v
+    docker compose down -v
     exit 1
 fi
 
@@ -150,7 +150,7 @@ CONSUMED=$(docker exec "${CONTAINER_NAME}" kafka-console-consumer.sh \
 
 if [ "$CONSUMED" -ne 3 ]; then
     echo "ERROR: Expected 3 messages, consumed $CONSUMED"
-    docker-compose down -v
+    docker compose down -v
     exit 1
 fi
 
@@ -158,7 +158,7 @@ echo "✓ Messages consumed successfully"
 
 # Verify version
 echo "Verifying Kafka version..."
-KAFKA_VERSION=$(docker logs "${CONTAINER_NAME}" 2>&1 | grep "Kafka version:" | tail -1 | awk '{print $NF}')
+KAFKA_VERSION=$(docker logs "${CONTAINER_NAME}" 2>&1 | grep "Kafka version:" | tail -1 | sed -E 's/.*Kafka version: ([^ ]+).*/\1/')
 if [ "$KAFKA_VERSION" != "$VERSION" ]; then
     echo "WARNING: Expected version ${VERSION}, found ${KAFKA_VERSION}"
 fi
@@ -166,7 +166,7 @@ echo "✓ Kafka version: ${KAFKA_VERSION}"
 
 # Cleanup
 echo "Cleaning up test container..."
-docker-compose down -v
+docker compose down -v
 
 echo ""
 echo "================================================="
