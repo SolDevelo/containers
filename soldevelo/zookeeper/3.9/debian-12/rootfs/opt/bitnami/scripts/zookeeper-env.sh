@@ -179,3 +179,9 @@ export ZOO_QUORUM_SERVER_USERS="${ZOO_QUORUM_SERVER_USERS:-}"
 export ZOO_QUORUM_SERVER_PASSWORDS="${ZOO_QUORUM_SERVER_PASSWORDS:-}"
 
 # Custom environment variables may be defined below
+
+# SolDevelo: ZooKeeper 3.9.5 renamed ALLOW_ANONYMOUS_LOGIN to ALLOW_EMPTY_PASSWORD. Keep accepting
+# the old name so setups written for bitnami/zookeeper <= 3.9.4 keep starting.
+if [[ -n "${ALLOW_ANONYMOUS_LOGIN:-}" && "$ALLOW_EMPTY_PASSWORD" = "no" ]]; then
+    export ALLOW_EMPTY_PASSWORD="$ALLOW_ANONYMOUS_LOGIN"
+fi
