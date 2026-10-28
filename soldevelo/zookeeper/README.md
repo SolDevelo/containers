@@ -64,7 +64,7 @@ ZooKeeper is configured via environment variables. Key variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `ALLOW_EMPTY_PASSWORD` | `no` | Allow unauthenticated access (set `yes` for dev) |
+| `ALLOW_EMPTY_PASSWORD` | `no` | Allow unauthenticated access (set `yes` for dev); the pre-3.9.5 name `ALLOW_ANONYMOUS_LOGIN` also works |
 | `ZOO_SERVER_ID` | `1` | Unique server ID in a cluster |
 | `ZOO_PORT_NUMBER` | `2181` | Client port |
 | `ZOO_TICK_TIME` | `2000` | ZooKeeper tick time in milliseconds |
