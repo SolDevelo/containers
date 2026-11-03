@@ -8,7 +8,7 @@ ARG DOWNLOADS_URL="https://downloads.bitnami.com/files/stacksmith"
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-10-26T22:09:39Z" \
+      org.opencontainers.image.created="2026-11-01T09:09:49Z" \
       org.opencontainers.image.description="Application packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/os-shell/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/os-shell" \
@@ -51,7 +51,7 @@ RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
 
 ENV APP_VERSION="12" \
     BITNAMI_APP_NAME="os-shell" \
-    IMAGE_REVISION="82" \
+    IMAGE_REVISION="83" \
     PATH="/opt/bitnami/common/bin:$PATH"
 
 USER 1001
