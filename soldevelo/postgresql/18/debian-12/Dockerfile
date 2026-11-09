@@ -10,7 +10,7 @@ ARG TARGETARCH
 ARG WITH_ALL_LOCALES="no"
 
 LABEL org.opencontainers.image.base.name="docker.io/bitnami/minideb:bookworm" \
-      org.opencontainers.image.created="2026-11-02T21:39:55Z" \
+      org.opencontainers.image.created="2026-11-06T05:03:23Z" \
       org.opencontainers.image.description="PostgreSQL container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/postgresql/README.md" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/postgresql" \
@@ -57,7 +57,7 @@ COPY rootfs /
 RUN /opt/bitnami/scripts/postgresql/postunpack.sh
 ENV APP_VERSION="18.6.0" \
     BITNAMI_APP_NAME="postgresql" \
-    IMAGE_REVISION="26" \
+    IMAGE_REVISION="27" \
     LANG="en_US.UTF-8" \
     LANGUAGE="en_US:en" \
     NSS_WRAPPER_LIB="/opt/bitnami/common/lib/libnss_wrapper.so" \
