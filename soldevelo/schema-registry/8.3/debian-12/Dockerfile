@@ -57,6 +57,9 @@ ENV APP_VERSION="8.3.2" \
     JAVA_HOME="/opt/bitnami/java" \
     PATH="/opt/bitnami/java/bin:/opt/bitnami/schema-registry/bin:/opt/bitnami/common/bin:$PATH"
 
+# CVE-2026-114938 (Java4Shell) mitigation: disable the vulnerable Base64 intrinsic
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
+
 USER 1001
 ENTRYPOINT [ "/opt/bitnami/scripts/schema-registry/entrypoint.sh" ]
 CMD [ "/opt/bitnami/scripts/schema-registry/run.sh" ]

@@ -53,6 +53,9 @@ ENV APP_VERSION="1.7.0" \
     IMAGE_REVISION="1" \
     PATH="/opt/bitnami/java/bin:$PATH"
 
+# CVE-2026-114938 (Java4Shell) mitigation: disable the vulnerable Base64 intrinsic
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
+
 EXPOSE 5556
 
 WORKDIR /opt/bitnami/jmx-exporter

@@ -126,4 +126,10 @@ export KAFKA_HEAP_OPTS="${KAFKA_HEAP_OPTS:--Xmx1024m -Xms1024m}"
 # Java settings
 export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-}"
 
+# CVE-2026-114938 (Java4Shell) mitigation: disable the vulnerable Base64 intrinsic
+# unless UseBASE64Intrinsics is explicitly set by the user
+if [[ "${JAVA_TOOL_OPTIONS:-}" != *UseBASE64Intrinsics* ]]; then
+    export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:+${JAVA_TOOL_OPTIONS} }-XX:-UseBASE64Intrinsics"
+fi
+
 # Custom environment variables may be defined below

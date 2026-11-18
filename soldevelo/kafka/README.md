@@ -188,7 +188,7 @@ docker-compose up -d
 | `KAFKA_CLIENT_USERS`                            | List of users that will be created when using `SASL_SCRAM` for client communications. Separated by commas, semicolons or whitespaces. | `nil`                               |
 | `KAFKA_CLIENT_PASSWORDS`                        | Passwords for the users specified at `KAFKA_CLIENT_USERS`. Separated by commas, semicolons or whitespaces.                            | `nil`                               |
 | `KAFKA_HEAP_OPTS`                               | Kafka heap options for Java.                                                                                                          | `-Xmx1024m -Xms1024m`               |
-| `JAVA_TOOL_OPTIONS`                             | Java tool options.                                                                                                                    | `nil`                               |
+| `JAVA_TOOL_OPTIONS`                             | Java tool options. `-XX:-UseBASE64Intrinsics` (CVE-2026-114938 mitigation) is appended unless `UseBASE64Intrinsics` is already set.   | `-XX:-UseBASE64Intrinsics`          |
 
 #### Read-only environment variables
 
