@@ -46,8 +46,8 @@ RUN mkdir -p /tmp/kafka-dl ; cd /tmp/kafka-dl ; \
     KAFKA_VERSION="3.9.2" ; \
     KAFKA_SCALA_VERSION="2.13" ; \
     KAFKA_FILE="kafka_${KAFKA_SCALA_VERSION}-${KAFKA_VERSION}.tgz" ; \
-    curl -SsLf "https://downloads.apache.org/kafka/${KAFKA_VERSION}/${KAFKA_FILE}" -O ; \
-    KAFKA_SHA512=$(curl -SsLf "https://downloads.apache.org/kafka/${KAFKA_VERSION}/${KAFKA_FILE}.sha512" \
+    curl -SsLf "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/${KAFKA_FILE}" -O ; \
+    KAFKA_SHA512=$(curl -SsLf "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/${KAFKA_FILE}.sha512" \
         | sed 's/^[^:]*://' | tr -dc '0-9A-Fa-f' | tr '[:upper:]' '[:lower:]') ; \
     echo "${KAFKA_SHA512}  ${KAFKA_FILE}" | sha512sum -c ; \
     mkdir -p /opt/bitnami/kafka ; \
@@ -68,6 +68,9 @@ ENV APP_VERSION="3.9.2" \
     BITNAMI_APP_NAME="kafka" \
     JAVA_HOME="/opt/bitnami/java" \
     PATH="/opt/bitnami/common/bin:/opt/bitnami/java/bin:/opt/bitnami/kafka/bin:$PATH"
+
+# CVE-2026-114938 (Java4Shell) mitigation: disable the vulnerable Base64 intrinsic
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
 
 EXPOSE 9092
 

@@ -29,10 +29,8 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "nounset", "-o", "pipefail", "-c"]
 RUN install_packages ca-certificates curl procps zlib1g
 RUN mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ ; \
     COMPONENTS=( \
-      "wait-for-port-1.0.8-8-linux-${OS_ARCH}-debian-12" \
-      "render-template-1.0.7-8-linux-${OS_ARCH}-debian-12" \
-      "java-17.0.13-12-1-linux-${OS_ARCH}-debian-12" \
-      "kafka-3.8.1-0-linux-${OS_ARCH}-debian-12" \
+      "wait-for-port-1.0.8-14-linux-${OS_ARCH}-debian-12" \
+      "jre-17.0.21-35-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -43,6 +41,17 @@ RUN mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ ; \
       tar -zxf "${COMPONENT}.tar.gz" -C /opt/bitnami --strip-components=2 --no-same-owner --wildcards '*/files' ; \
       rm -rf "${COMPONENT}".tar.gz{,.sha256} ; \
     done
+RUN mkdir -p /tmp/kafka-dl ; cd /tmp/kafka-dl ; \
+    KAFKA_VERSION="3.8.1" ; \
+    KAFKA_SCALA_VERSION="2.12" ; \
+    KAFKA_FILE="kafka_${KAFKA_SCALA_VERSION}-${KAFKA_VERSION}.tgz" ; \
+    curl -SsLf "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/${KAFKA_FILE}" -O ; \
+    KAFKA_SHA512=$(curl -SsLf "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/${KAFKA_FILE}.sha512" \
+        | sed 's/^[^:]*://' | tr -dc '0-9A-Fa-f' | tr '[:upper:]' '[:lower:]') ; \
+    echo "${KAFKA_SHA512}  ${KAFKA_FILE}" | sha512sum -c ; \
+    mkdir -p /opt/bitnami/kafka ; \
+    tar -zxf "${KAFKA_FILE}" -C /opt/bitnami/kafka --strip-components=1 --no-same-owner ; \
+    rm -rf /tmp/kafka-dl
 RUN apt-get update && apt-get upgrade -y && \
     apt-get clean && rm -rf /var/lib/apt/lists /var/cache/apt/archives
 RUN chmod g+rwX /opt/bitnami
@@ -57,6 +66,9 @@ ENV APP_VERSION="3.8.1" \
     BITNAMI_APP_NAME="kafka" \
     JAVA_HOME="/opt/bitnami/java" \
     PATH="/opt/bitnami/common/bin:/opt/bitnami/java/bin:/opt/bitnami/kafka/bin:$PATH"
+
+# CVE-2026-114938 (Java4Shell) mitigation: disable the vulnerable Base64 intrinsic
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
 
 EXPOSE 9092
 

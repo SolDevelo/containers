@@ -93,4 +93,10 @@ export SCHEMA_REGISTRY_CLIENT_AUTHENTICATION="${SCHEMA_REGISTRY_CLIENT_AUTHENTIC
 export SCHEMA_REGISTRY_AVRO_COMPATIBILY_LEVEL="${SCHEMA_REGISTRY_AVRO_COMPATIBILY_LEVEL:-}"
 export SCHEMA_REGISTRY_DEBUG="${SCHEMA_REGISTRY_DEBUG:-}"
 
+# CVE-2026-114938 (Java4Shell) mitigation: disable the vulnerable Base64 intrinsic
+# unless UseBASE64Intrinsics is explicitly set by the user
+if [[ "${JAVA_TOOL_OPTIONS:-}" != *UseBASE64Intrinsics* ]]; then
+    export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:+${JAVA_TOOL_OPTIONS} }-XX:-UseBASE64Intrinsics"
+fi
+
 # Custom environment variables may be defined below
