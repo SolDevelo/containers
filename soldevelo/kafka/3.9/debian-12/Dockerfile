@@ -46,8 +46,8 @@ RUN mkdir -p /tmp/kafka-dl ; cd /tmp/kafka-dl ; \
     KAFKA_VERSION="3.9.2" ; \
     KAFKA_SCALA_VERSION="2.13" ; \
     KAFKA_FILE="kafka_${KAFKA_SCALA_VERSION}-${KAFKA_VERSION}.tgz" ; \
-    curl -SsLf "https://downloads.apache.org/kafka/${KAFKA_VERSION}/${KAFKA_FILE}" -O ; \
-    KAFKA_SHA512=$(curl -SsLf "https://downloads.apache.org/kafka/${KAFKA_VERSION}/${KAFKA_FILE}.sha512" \
+    curl -SsLf "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/${KAFKA_FILE}" -O ; \
+    KAFKA_SHA512=$(curl -SsLf "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/${KAFKA_FILE}.sha512" \
         | sed 's/^[^:]*://' | tr -dc '0-9A-Fa-f' | tr '[:upper:]' '[:lower:]') ; \
     echo "${KAFKA_SHA512}  ${KAFKA_FILE}" | sha512sum -c ; \
     mkdir -p /opt/bitnami/kafka ; \

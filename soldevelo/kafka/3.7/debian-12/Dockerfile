@@ -14,11 +14,11 @@ LABEL com.vmware.cp.artifact.flavor="sha256:c50c90cfd9d12b445b011e6ad529f1ad3dae
       org.opencontainers.image.description="Apache Kafka container image packaged by SolDevelo, based on Bitnami's work" \
       org.opencontainers.image.documentation="https://github.com/soldevelo/containers/tree/main/soldevelo/kafka/README.md" \
       org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.ref.name="3.7.1-debian-12-r11" \
+      org.opencontainers.image.ref.name="3.7.2-debian-12-r0" \
       org.opencontainers.image.source="https://github.com/soldevelo/containers/tree/main/soldevelo/kafka" \
       org.opencontainers.image.title="kafka" \
       org.opencontainers.image.vendor="SolDevelo" \
-      org.opencontainers.image.version="3.7.1"
+      org.opencontainers.image.version="3.7.2"
 
 ENV HOME="/" \
     OS_ARCH="${TARGETARCH:-amd64}" \
@@ -31,10 +31,8 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "nounset", "-o", "pipefail", "-c"]
 RUN install_packages ca-certificates curl procps zlib1g
 RUN mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ ; \
     COMPONENTS=( \
-      "wait-for-port-1.0.8-8-linux-${OS_ARCH}-debian-12" \
-      "render-template-1.0.7-8-linux-${OS_ARCH}-debian-12" \
-      "java-17.0.13-12-1-linux-${OS_ARCH}-debian-12" \
-      "kafka-3.7.1-1-linux-${OS_ARCH}-debian-12" \
+      "wait-for-port-1.0.8-14-linux-${OS_ARCH}-debian-12" \
+      "jre-17.0.21-35-0-linux-${OS_ARCH}-debian-12" \
     ) ; \
     for COMPONENT in "${COMPONENTS[@]}"; do \
       if [ ! -f "${COMPONENT}.tar.gz" ]; then \
@@ -45,6 +43,17 @@ RUN mkdir -p /tmp/bitnami/pkg/cache/ ; cd /tmp/bitnami/pkg/cache/ ; \
       tar -zxf "${COMPONENT}.tar.gz" -C /opt/bitnami --strip-components=2 --no-same-owner --wildcards '*/files' ; \
       rm -rf "${COMPONENT}".tar.gz{,.sha256} ; \
     done
+RUN mkdir -p /tmp/kafka-dl ; cd /tmp/kafka-dl ; \
+    KAFKA_VERSION="3.7.2" ; \
+    KAFKA_SCALA_VERSION="2.12" ; \
+    KAFKA_FILE="kafka_${KAFKA_SCALA_VERSION}-${KAFKA_VERSION}.tgz" ; \
+    curl -SsLf "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/${KAFKA_FILE}" -O ; \
+    KAFKA_SHA512=$(curl -SsLf "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/${KAFKA_FILE}.sha512" \
+        | sed 's/^[^:]*://' | tr -dc '0-9A-Fa-f' | tr '[:upper:]' '[:lower:]') ; \
+    echo "${KAFKA_SHA512}  ${KAFKA_FILE}" | sha512sum -c ; \
+    mkdir -p /opt/bitnami/kafka ; \
+    tar -zxf "${KAFKA_FILE}" -C /opt/bitnami/kafka --strip-components=1 --no-same-owner ; \
+    rm -rf /tmp/kafka-dl
 RUN apt-get update && apt-get upgrade -y && \
     apt-get clean && rm -rf /var/lib/apt/lists /var/cache/apt/archives
 RUN chmod g+rwX /opt/bitnami
@@ -56,7 +65,7 @@ COPY rootfs /
 RUN chmod +x /etc/kafka/docker/run
 RUN /opt/bitnami/scripts/java/postunpack.sh
 RUN /opt/bitnami/scripts/kafka/postunpack.sh
-ENV APP_VERSION="3.7.1" \
+ENV APP_VERSION="3.7.2" \
     BITNAMI_APP_NAME="kafka" \
     JAVA_HOME="/opt/bitnami/java" \
     PATH="/opt/bitnami/common/bin:/opt/bitnami/java/bin:/opt/bitnami/kafka/bin:$PATH"
